@@ -10,6 +10,8 @@ import imageio.v3 as iio
 from scipy import signal    # Para aplicar filtros
 from wand.image import Image
 
+# cambios
+
 #%%
 def centrar_referencia(imagen_post, imagen_pre, bordes_extra, maximo = False):
     l = imagen_pre.shape[0]
