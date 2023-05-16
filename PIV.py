@@ -58,7 +58,7 @@ post0 = centrar_referencia( stack_post[ deep[z] ] , pre1, 50)
 
 #%% Reconstruyo con PIV y filtro los datos con, Normalized Median Test (NMT)
 vi = 128 
-it = 2
+it = 3
 exploration = 5 # px
 suave = 1
 Noise_for_NMT = 0.2
