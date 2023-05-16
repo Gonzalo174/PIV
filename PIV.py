@@ -37,10 +37,19 @@ stack_pre = of.imread( file_pre )[0]
 stack_post = of.imread( file_post )[0]
 celula = of.imread( file_cell )[1, 1]
 
+#%% Deep dependency of the deformation
+
+for i in range(11):
+    
+
+
+
+
 #%%
-z = 0
-pre1 = stack_pre[z]
-post0 = centrar_referencia( stack_post[z] , pre1, 50)
+deep = dict({-3:0, -3.5:1, -4:2, -4.5:3, -5:4, -5.5:5, -6:6, -6.5:7, -7:8, -7.5:9, -8:10})
+z = -3
+pre1 = stack_pre[ deep[z] ]
+post0 = centrar_referencia( stack_post[ deep[z] ] , pre1, 50)
 
 #%% Varias alturas
 
@@ -49,51 +58,52 @@ post0 = centrar_referencia( stack_post[z] , pre1, 50)
 
 #%% Reconstruyo con PIV y filtro los datos con, Normalized Median Test (NMT)
 vi = 128 
-it = 3
+it = 2
+exploration = 5 # px
 suave = 1
 Noise_for_NMT = 0.2
 Threshold_for_NMT = 5
 
-Y, X = n_iteraciones(suavizar(post0,suave), suavizar(pre1,suave), vi, it, bordes_extra = 6)
+Y, X = n_iteraciones(suavizar(post0,suave), suavizar(pre1,suave), vi, it, bordes_extra = exploration)
 Y_nmt, X_nmt, res = nmt(Y, X, Noise_for_NMT, Threshold_for_NMT)
 
-#%%
-# Ploteo
+#%% Ploteo
 l = Y_nmt.shape[0]
 x,y = np.meshgrid(np.arange(l),np.arange(l))
 marcas = np.arange(6)*int( np.round(field,-2)/(6-1) )
 suave0 = 3
+scale0 = 100
 X_s,Y_s = suavizar(X_nmt,suave0),suavizar(Y_nmt, suave0)
 
-# plt.figure()
-# # plt.subplot(1,3,1)
-# plt.title('Resultado PIV')
-# plt.yticks( marcas*pixel_size/( vi/(2**(it-1)) ) ,marcas)
-# plt.xticks( marcas*pixel_size/( vi/(2**(it-1)) ) ,marcas)
-# plt.xlabel("Distancia [um]")
-# plt.ylabel("Distancia [um]")
-# plt.quiver(x,y,X,Y)
-#
-# plt.figure()
-# plt.title('Resultado NMT')
-# plt.yticks( marcas*pixel_size/( vi/(2**(it-1)) ) ,marcas)
-# plt.xticks( marcas*pixel_size/( vi/(2**(it-1)) ) ,marcas)
-# plt.xlabel("Distancia [um]")
-# plt.ylabel("Distancia [um]")
-# plt.quiver(x,y,X_nmt,Y_nmt)
+plt.figure()
+# plt.subplot(1,3,1)
+plt.title('Resultado PIV')
+plt.yticks( marcas/pixel_size/( vi/(2**(it-1)) ) , marcas)
+plt.xticks( marcas/pixel_size/( vi/(2**(it-1)) ) , marcas)
+plt.xlabel("Distancia [um]")
+plt.ylabel("Distancia [um]")
+plt.quiver(x,y,X,Y, scale = scale0)
+
+plt.figure()
+plt.title('Resultado NMT')
+plt.yticks( marcas/pixel_size/( vi/(2**(it-1)) ) , marcas)
+plt.xticks( marcas/pixel_size/( vi/(2**(it-1)) ) , marcas)
+plt.xlabel("Distancia [um]")
+plt.ylabel("Distancia [um]")
+plt.quiver(x,y,X_nmt,Y_nmt, scale = scale0)
 # plt.subplot(1,3,2)
 plt.figure()
 plt.title("Suavizado")
-plt.yticks( marcas/pixel_size/( vi/(2**(it-1)) ) ,marcas)
-plt.xticks( marcas/pixel_size/( vi/(2**(it-1)) ) ,marcas)
+plt.yticks( marcas/pixel_size/( vi/(2**(it-1)) ) , marcas)
+plt.xticks( marcas/pixel_size/( vi/(2**(it-1)) ) , marcas)
 plt.xlabel("Distancia [um]")
 plt.ylabel("Distancia [um]")
-plt.quiver(x,y,X_s,Y_s)
+plt.quiver(x,y,X_s,Y_s, scale = scale0)
 # plt.subplot(1,3,3)
 # plt.figure()
 # plt.title("Posiciones marcadas por el NMT (en blanco)")
-# plt.yticks( (marcas[::-1])*pixel_size/( vi/(2**(it-1)) ) ,marcas)
-# plt.xticks( marcas*pixel_size/( vi/(2**(it-1)) ) ,marcas)
+# plt.yticks( (marcas[::-1])/pixel_size/( vi/(2**(it-1)) ) ,marcas)
+# plt.xticks( marcas/pixel_size/( vi/(2**(it-1)) ) ,marcas)
 # plt.imshow( np.fliplr(res), cmap = 'gray' )
 # plt.xlabel("Distancia [um]")
 # plt.ylabel("Distancia [um]")
@@ -104,20 +114,21 @@ plt.yticks( marcas/pixel_size  ,marcas)
 plt.xticks( marcas/pixel_size  ,marcas)
 plt.xlabel("Distancia [um]")
 plt.ylabel("Distancia [um]")
-plt.imshow(np.flip( celula , 0 )  )
+plt.imshow( np.flip( celula , 0 ) )
 
 
 #%%
 
-# r = np.sqrt(Y_nmt**2 + X_nmt**2)
-# plt.figure()
-# plt.title("Distribucion NMT")
-# plt.xlabel('Desplazamiento [um]')
-# plt.ylabel('Cuentas')
-# plt.grid(True)
-# plt.ylim([0,600])
-# plt.hist(r.flatten()*pixel_size, bins = np.arange(-0.01,0.4, 0.02)  )
-# print(np.mean( r.flatten()*pixel_size ))
+r = np.sqrt(Y_nmt**2 + X_nmt**2)
+plt.figure()
+plt.title("Distribucion NMT")
+plt.xlabel('Desplazamiento [um]')
+plt.ylabel('Cuentas')
+plt.grid(True)
+plt.ylim([0,600])
+plt.hist(r.flatten()*pixel_size, bins = np.arange(-0.01, np.round( (exploration+1)*pixel_size, 1 ) , 0.02)  )
+print(np.mean( r.flatten()*pixel_size ))
+#%%
 
 X_s,Y_s = suavizar(X_nmt,suave0),suavizar(Y_nmt, suave0)
 r = np.sqrt(Y_s**2 + X_s**2)
@@ -128,7 +139,7 @@ plt.xlabel('Desplazamiento [um]')
 plt.ylabel('Cuentas')
 plt.grid(True)
 plt.ylim([0,600])
-plt.hist(r.flatten()*pixel_size, bins = np.arange(-0.01,0.4, 0.02)  )
+plt.hist(r.flatten()*pixel_size, bins = np.arange(-0.01, np.round( (exploration+1)*pixel_size,1 ) , 0.02)  )
 plt.show()
 
 
@@ -170,7 +181,7 @@ plt.hist( post0.flatten(), bins = np.arange(300)*2 )
 
 imagen = np.zeros([resolution,resolution,3])
 
-th0, th = 320, 410
+th0, th = 110, 130
 # pre_bin = np.zeros_like(pre1)
 pre_bin = np.copy( (pre1-th0)/th )
 pre_bin[suavizar(pre1,3) < th] = 0 
