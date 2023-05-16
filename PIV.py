@@ -21,60 +21,31 @@ field = 105.6
 resolution = 1600
 pixel_size = field/resolution
 
+# file_cell = "B1-R1-08-60X-pw0.5-k0-tra.oif"
 # file_pre = "B1-R1-09-60X-pw20-k2-pre.oif"
 # file_post = "B1-R1-13-60X-pw20-k2-post.oif"
 
+file_cell = "B1-R2-10-60X-pw0.5-k0-tra.oif"
 file_pre = "B1-R2-11-60X-pw20-k2-pre.oif"
 file_post = "B1-R2-12-60X-pw20-k2-post.oif"
 
-# file_post = "B1-R3-14-60X-pw20-k2-post.oif"
+# file_cell = "B1-R3-06-60X-pw0.5-k0-tra.oif"
 # file_pre = "B1-R3-07-60X-pw20-k2-pre.oif"
+# file_post = "B1-R3-14-60X-pw20-k2-post.oif"
 
-
-stack_pre = of.imread( file_pre )
-stack_post = of.imread( file_post )
-
-pre1 = stack_pre[0, 2, :, :]
-post0 = centrar_referencia( stack_post[0, 2, :, :] , pre1, 50)
-celula = of.imread( file_pre )[1, 0, :, :]
-
-#%% Analize correlation
-
-im, maxi = centrar_referencia( stack_post[0, -5, :, :] , pre1, 50, maximo = True)
-print(maxi)
-
-#%% Plot 
-
-plt.figure()
-plt.imshow(post0, cmap = 'gray', vmin = 80, vmax = 700)
-
-plt.figure()
-plt.imshow(pre1, cmap = 'gray', vmin = 80, vmax = 800)
-
-plt.figure()
-plt.imshow(np.flip( celula , 0 )  )
-
-#%% 
-
-plt.hist( post0.flatten(), bins = np.arange(300)*2 )
-
+stack_pre = of.imread( file_pre )[0]
+stack_post = of.imread( file_post )[0]
+celula = of.imread( file_cell )[1, 1]
 
 #%%
+z = 0
+pre1 = stack_pre[z]
+post0 = centrar_referencia( stack_post[z] , pre1, 50)
 
-imagen = np.zeros([resolution,resolution,3])
+#%% Varias alturas
 
-pre_bin = np.zeros_like(pre1)
-pre_bin[pre1 < 250] = 0 
-pre_bin[pre1 >= 250] = 255
-
-post_bin = np.zeros_like(post0)
-post_bin[post0 < 240] = 0 
-post_bin[post0 >= 240] = 255
-
-imagen[:,:,0] = pre_bin
-imagen[:,:,1] = post_bin
-
-plt.imshow(imagen)
+#pre1 = stack_pre[0, 0] + stack_pre[0, 1] + stack_pre[0, 2]
+#post0 = centrar_referencia( stack_post[0, 0] + stack_post[0, 1] + stack_post[0, 2], pre1, 50)
 
 #%% Reconstruyo con PIV y filtro los datos con, Normalized Median Test (NMT)
 vi = 128 
@@ -102,7 +73,7 @@ X_s,Y_s = suavizar(X_nmt,suave0),suavizar(Y_nmt, suave0)
 # plt.xlabel("Distancia [um]")
 # plt.ylabel("Distancia [um]")
 # plt.quiver(x,y,X,Y)
-# #
+#
 # plt.figure()
 # plt.title('Resultado NMT')
 # plt.yticks( marcas*pixel_size/( vi/(2**(it-1)) ) ,marcas)
@@ -127,6 +98,13 @@ plt.quiver(x,y,X_s,Y_s)
 # plt.xlabel("Distancia [um]")
 # plt.ylabel("Distancia [um]")
 # # blanco son los que detecta y cambia
+plt.figure()
+plt.title("Célula")
+plt.yticks( marcas/pixel_size  ,marcas)
+plt.xticks( marcas/pixel_size  ,marcas)
+plt.xlabel("Distancia [um]")
+plt.ylabel("Distancia [um]")
+plt.imshow(np.flip( celula , 0 )  )
 
 
 #%%
@@ -145,13 +123,13 @@ X_s,Y_s = suavizar(X_nmt,suave0),suavizar(Y_nmt, suave0)
 r = np.sqrt(Y_s**2 + X_s**2)
 r_mean = np.mean( r.flatten()*pixel_size )
 plt.figure()
-plt.title("Distribucion NMT suavizado, r_mean: " + str( np.round(r_mean,2)) + ' um'  )
+plt.title("Distribucion NMT suavizado, r_mean: " + str( np.round(r_mean,3)) + ' um'  )
 plt.xlabel('Desplazamiento [um]')
 plt.ylabel('Cuentas')
 plt.grid(True)
 plt.ylim([0,600])
 plt.hist(r.flatten()*pixel_size, bins = np.arange(-0.01,0.4, 0.02)  )
-print()
+plt.show()
 
 
 #%%
@@ -172,8 +150,53 @@ plt.hist(val_post, bins = np.arange(4000))
 plt.title('post')
 
 
+#%% Plot 
+
+plt.figure()
+plt.imshow(post0, cmap = 'gray', vmin = 80, vmax = 700)
+
+plt.figure()
+plt.imshow(pre1, cmap = 'gray', vmin = 80, vmax = 800)
+
+plt.figure()
+plt.imshow(np.flip( celula , 0 )  )
+
+#%% 
+
+plt.hist( post0.flatten(), bins = np.arange(300)*2 )
 
 
+#%%
+
+imagen = np.zeros([resolution,resolution,3])
+
+th0, th = 320, 410
+# pre_bin = np.zeros_like(pre1)
+pre_bin = np.copy( (pre1-th0)/th )
+pre_bin[suavizar(pre1,3) < th] = 0 
+pre_bin[suavizar(pre1,3) >= th] = 1
+
+# post_bin = np.zeros_like(post0)
+post_bin = np.copy( (post0-th0)/th )
+post_bin[suavizar(post0,3) < th0] = 0 
+post_bin[suavizar(post0,3) >= th] = 1
+
+imagen[:,:,1] = pre_bin
+imagen[:,:,0] = post_bin
+
+plt.figure()
+plt.imshow( np.flip( celula , 0 )  )
+# plt.xlim([700,1200])
+# plt.ylim([1000,1400])
+plt.figure()
+plt.imshow( np.flip(imagen,0) )
+# plt.xlim([700,1200])
+# plt.ylim([1000,1400])
+
+#%% Analize correlation
+
+im, maxi = centrar_referencia( stack_post[0, 1, :, :] , pre1, 50, maximo = True)
+print(maxi)
 
 
 
