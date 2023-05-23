@@ -10,16 +10,53 @@ import imageio.v3 as iio
 from scipy import ndimage   # Para rotar imagenes
 from scipy import signal    # Para aplicar filtros
 import oiffile as of
+import os
 
 #%%
 plt.rcParams['figure.figsize'] = [9,9]
 plt.rcParams['font.size'] = 15
 
-#%% Import files and set metadata
+#%%
 
+# Specify the folder path
+folder_path = r'C:\Users\gonza\1\Tesis\2023\23.05.18 - Celulas en geles OA Orange'  # Replace with the path to your folder
+# folder_path = r'C:\Users\gonza\1\Tesis\2022\practica-PIV\gel8'
+
+# Get the list of file names in the folder
+file_names = os.listdir(folder_path)
+
+# Print the file names
+for file_name in file_names:
+    print(file_name)
+
+
+#%% Import files and set metadata
+# field = 75.2
 field = 105.6
 resolution = 1600
 pixel_size = field/resolution
+
+# Viejos
+
+# file_cell = "gel1_cell1_TFM_47nm_PRE_K.oif"
+# file_pre = "gel1_cell1_TFM_47nm_PRE_K.oif"
+# file_post = "gel1_cell1_TFM_47nm_Post_K.oif"
+
+# Orange 18/5
+
+# file_cell = "09-BOB-R2-60X-pw0.2-k0-zoomX2-tra.oif"
+# file_pre = "10-BOB-R2-60X-pw0.2-k2-zoomX2-pre.oif"
+# file_post = "13-BOB-R2-60X-pw0.2-k2-zoomX2-post.oif"
+
+# file_cell = "01-BOA-R1-60X-pw0.1-k0-tra.oif"
+# file_pre = "02-BOA-R1-60X-pw0.2-k0-pre.oif"
+# file_post = "06-BOA-R1-60X-pw0.2-k2-post.oif"
+
+# file_cell = "03-BOA-R2-60X-pw0.2-k0-tra.oif"
+# file_pre = "04-BOA-R2-60X-pw0.2-k2-pre.oif"
+# file_post = "05-BOA-R2-60X-pw0.2-k2-post.oif"
+
+# Crimson 11/5
 
 # file_cell = "B1-R1-08-60X-pw0.5-k0-tra.oif"
 # file_pre = "B1-R1-09-60X-pw20-k2-pre.oif"
@@ -37,34 +74,64 @@ stack_pre = of.imread( file_pre )[0]
 stack_post = of.imread( file_post )[0]
 celula = of.imread( file_cell )[1, 1]
 
-#%% Deep dependency of the deformation
+#%% Analize correlation
 
-for i in range(11):
-    
-
-
-
+pre1 = stack_pre[ 1 ]
+# post0 = centrar_referencia( stack_post[ 2 ] , pre1, 250)
+post0 = centrar_referencia_3D( stack_post, pre1, 250)
 
 #%%
-deep = dict({-3:0, -3.5:1, -4:2, -4.5:3, -5:4, -5.5:5, -6:6, -6.5:7, -7:8, -7.5:9, -8:10})
-z = -3
-pre1 = stack_pre[ deep[z] ]
-post0 = centrar_referencia( stack_post[ deep[z] ] , pre1, 50)
+# pre1 = pre1[750:1450, 800:1500]
+# post0 = post0[750:1450, 800:1500]
+# celula = celula[750:1450, 800:1500]
 
 #%% Varias alturas
 
 #pre1 = stack_pre[0, 0] + stack_pre[0, 1] + stack_pre[0, 2]
 #post0 = centrar_referencia( stack_post[0, 0] + stack_post[0, 1] + stack_post[0, 2], pre1, 50)
 
+#%% Plot 
+
+plt.figure()
+plt.title('Pre')
+plt.imshow( np.flip( pre1, 0 ) , cmap = 'gray', vmin = 80, vmax = 700)
+
+plt.figure()
+plt.title('Post')
+plt.imshow(  np.flip( post0, 0 ) , cmap = 'gray', vmin = 80, vmax = 700)
+
+plt.figure()
+# plt.title('Trans')
+plt.imshow(np.flip( celula , 0 )  )
+plt.axis('off')
+
+#%% Plot 
+
+a, b = 17,6
+w = 32
+
+plt.figure()
+plt.title('Pre')
+plt.imshow( np.flip( pre1, 0 )[w*a:w*(a+1),w*b:w*(b+1)] , cmap = 'gray', vmin = 80, vmax = 700)
+
+plt.figure()
+plt.title('Post')
+plt.imshow(  np.flip( post0, 0 )[w*a:w*(a+1),w*b:w*(b+1)] , cmap = 'gray', vmin = 80, vmax = 700)
+
+# plt.figure()
+# plt.title('Trans')
+# plt.imshow(np.flip( celula , 0 )[w*a:w*(a+1),w*b:w*(b+1)]  )
+
+
 #%% Reconstruyo con PIV y filtro los datos con, Normalized Median Test (NMT)
-vi = 128 
+vi = 200
 it = 3
 exploration = 5 # px
 suave = 1
 Noise_for_NMT = 0.2
 Threshold_for_NMT = 5
 
-Y, X = n_iteraciones(suavizar(post0,suave), suavizar(pre1,suave), vi, it, bordes_extra = exploration)
+Y, X = n_iteraciones_pro(suavizar(post0,suave), suavizar(pre1,suave), vi, it, bordes_extra = exploration)
 Y_nmt, X_nmt, res = nmt(Y, X, Noise_for_NMT, Threshold_for_NMT)
 
 #%% Ploteo
@@ -100,14 +167,14 @@ plt.xlabel("Distancia [um]")
 plt.ylabel("Distancia [um]")
 plt.quiver(x,y,X_s,Y_s, scale = scale0)
 # plt.subplot(1,3,3)
-# plt.figure()
-# plt.title("Posiciones marcadas por el NMT (en blanco)")
-# plt.yticks( (marcas[::-1])/pixel_size/( vi/(2**(it-1)) ) ,marcas)
-# plt.xticks( marcas/pixel_size/( vi/(2**(it-1)) ) ,marcas)
-# plt.imshow( np.fliplr(res), cmap = 'gray' )
-# plt.xlabel("Distancia [um]")
-# plt.ylabel("Distancia [um]")
-# # blanco son los que detecta y cambia
+plt.figure()
+plt.title("Posiciones marcadas por el NMT (en blanco)")
+plt.yticks( (marcas[::-1])/pixel_size/( vi/(2**(it-1)) ) ,marcas)
+plt.xticks( marcas/pixel_size/( vi/(2**(it-1)) ) ,marcas)
+plt.imshow( np.fliplr(res), cmap = 'gray' )
+plt.xlabel("Distancia [um]")
+plt.ylabel("Distancia [um]")
+# blanco son los que detecta y cambia
 plt.figure()
 plt.title("Célula")
 plt.yticks( marcas/pixel_size  ,marcas)
@@ -125,7 +192,7 @@ plt.title("Distribucion NMT")
 plt.xlabel('Desplazamiento [um]')
 plt.ylabel('Cuentas')
 plt.grid(True)
-plt.ylim([0,600])
+# plt.ylim([0,600])
 plt.hist(r.flatten()*pixel_size, bins = np.arange(-0.01, np.round( (exploration+1)*pixel_size, 1 ) , 0.02)  )
 print(np.mean( r.flatten()*pixel_size ))
 #%%
@@ -138,7 +205,7 @@ plt.title("Distribucion NMT suavizado, r_mean: " + str( np.round(r_mean,3)) + ' 
 plt.xlabel('Desplazamiento [um]')
 plt.ylabel('Cuentas')
 plt.grid(True)
-plt.ylim([0,600])
+# plt.ylim([0,600])
 plt.hist(r.flatten()*pixel_size, bins = np.arange(-0.01, np.round( (exploration+1)*pixel_size,1 ) , 0.02)  )
 plt.show()
 
@@ -161,16 +228,7 @@ plt.hist(val_post, bins = np.arange(4000))
 plt.title('post')
 
 
-#%% Plot 
 
-plt.figure()
-plt.imshow(post0, cmap = 'gray', vmin = 80, vmax = 700)
-
-plt.figure()
-plt.imshow(pre1, cmap = 'gray', vmin = 80, vmax = 800)
-
-plt.figure()
-plt.imshow(np.flip( celula , 0 )  )
 
 #%% 
 
@@ -181,7 +239,7 @@ plt.hist( post0.flatten(), bins = np.arange(300)*2 )
 
 imagen = np.zeros([resolution,resolution,3])
 
-th0, th = 110, 130
+th0, th = 100, 400
 # pre_bin = np.zeros_like(pre1)
 pre_bin = np.copy( (pre1-th0)/th )
 pre_bin[suavizar(pre1,3) < th] = 0 
@@ -204,10 +262,7 @@ plt.imshow( np.flip(imagen,0) )
 # plt.xlim([700,1200])
 # plt.ylim([1000,1400])
 
-#%% Analize correlation
 
-im, maxi = centrar_referencia( stack_post[0, 1, :, :] , pre1, 50, maximo = True)
-print(maxi)
 
 
 
