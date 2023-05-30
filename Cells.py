@@ -77,25 +77,68 @@ file_post = "B1-R2-12-60X-pw20-k2-post.oif"
 
 #%% Plot 
 
-celula = of.imread( file_cell )[1, 1]
+celula = np.flip( of.imread( file_cell )[1, 1], 0 )
 plt.figure()
 # plt.title('Trans')
 plt.imshow( celula  )
-plt.axis('off')
+# plt.axis('off')
 
 #%%
 
-celula2 = suavizar(celula,2)
+celula2 = suavizar(celula,3)
+
+plt.figure()
 plt.hist( celula2.flatten(), bins = np.arange(4096) )
-plt.xlim(800,1700)
+# plt.xlim(800,1700)
+
+plt.figure()
+plt.imshow( celula2 )
+ #%%
+
+umbral = filters.threshold_otsu(celula2.flatten(), nbins = np.arange(700, 1700, 1) )
+
+celula_bin = np.zeros( celula.shape )
+celula_bin[celula2>umbral] = 1
+plt.imshow( celula_bin  )
+
+#%%
+# kernel del filtro
+s = [[1, 2, 1],  
+      [0, 0, 0], 
+      [-1, -2, -1]]
+
+# s = [[1, 1, 1],  
+#      [0, 0, 0], 
+#      [-1, -1, -1]]
+
+HR = signal.convolve2d(celula2, s)
+VR = signal.convolve2d(celula2, np.transpose(s))
+celula_bordes = (HR**2 + VR**2)**0.5
+  
+
+plt.figure()
+plt.imshow( celula_bordes )
+plt.title('Filtro de detección de bordes')
 
 #%%
 
-# umbral = filters.threshold_otsu(celula2, nbins = np.arange(4096))
-celula_bin = np.zeros( celula.shape )
-celula_bin[celula2>1250] = 1
-plt.imshow( celula_bin  )
-plt.axis('off')
+
+plt.hist( celula_bordes.flatten(), bins = np.arange(500)  )
+# plt.yscale("log")
+plt.show()
+
+#%%
+umbral0 = filters.threshold_otsu(celula_bordes.flatten(), nbins = np.arange(500) )
+print(umbral0)
+
+#%%
+celula_bordes_bin = np.zeros( celula_bordes.shape )
+celula_bordes_bin[celula_bordes > 100] = 1
+plt.imshow( celula_bordes_bin  )
+
+
+iio.imwrite('bordesbin.tiff', celula_bordes_bin)
+
 
 #%%
 # kernel del filtro
@@ -103,14 +146,45 @@ s = [[1, 2, 1],
      [0, 0, 0], 
      [-1, -2, -1]]
 
-HR = signal.convolve2d(celula, s)
-VR = signal.convolve2d(celula, np.transpose(s))
-img_bordes = (HR**2 + VR**2)**0.5
+
+HR = signal.convolve2d(celula_bordes_bin, s)
+VR = signal.convolve2d(celula_bordes_bin, np.transpose(s))
+celula_bordes2 = (HR**2 + VR**2)**0.5
+  
 
 plt.figure()
-plt.imshow( img_bordes )
+plt.imshow( celula_bordes2 )
 plt.title('Filtro de detección de bordes')
 #%%
+celula_bordes_bin2 = np.zeros( celula_bordes2.shape )
+celula_bordes_bin2[celula_bordes<1] = 1
+plt.imshow( celula_bordes_bin2 )
+
+
+
+
+#%%
+celula_procesada = suavizar(celula_bordes_bin,3)
+plt.imshow( celula_procesada )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
