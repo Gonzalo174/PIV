@@ -7,6 +7,7 @@ Created on Fri May 26 14:29:00 2023
 import numpy as np
 import matplotlib.pyplot as plt
 import imageio.v3 as iio
+import cv2 as cv
 from scipy import ndimage   # Para rotar imagenes
 from scipy import signal    # Para aplicar filtros
 import oiffile as of
@@ -64,42 +65,72 @@ pixel_size = field/resolution
 # file_pre = "B1-R1-09-60X-pw20-k2-pre.oif"
 # file_post = "B1-R1-13-60X-pw20-k2-post.oif"
 
-file_cell = "B1-R2-10-60X-pw0.5-k0-tra.oif"
-file_pre = "B1-R2-11-60X-pw20-k2-pre.oif"
-file_post = "B1-R2-12-60X-pw20-k2-post.oif"
+# file_cell = "B1-R2-10-60X-pw0.5-k0-tra.oif"
+# file_pre = "B1-R2-11-60X-pw20-k2-pre.oif"
+# file_post = "B1-R2-12-60X-pw20-k2-post.oif"
 
-# file_cell = "B1-R3-06-60X-pw0.5-k0-tra.oif"
-# file_pre = "B1-R3-07-60X-pw20-k2-pre.oif"
-# file_post = "B1-R3-14-60X-pw20-k2-post.oif"
+file_cell = "B1-R3-06-60X-pw0.5-k0-tra.oif"
+file_pre = "B1-R3-07-60X-pw20-k2-pre.oif"
+file_post = "B1-R3-14-60X-pw20-k2-post.oif"
 
 # stack_pre = of.imread( file_pre )[0]
 # stack_post = of.imread( file_post )[0]
 
+
+#%%
+def median_blur(img, kernel_size):
+    L, k = len(img), kernel_size
+    img0 = np.ones([L + k//2, L + k//2])*np.mean( img.flatten() )
+    img0[k//2:L + k//2, k//2:L + k//2] = img
+    blur = np.zeros([L,L])
+    for j in range(L):
+        for i in range(L):
+            muestra = img0[ j: j+k , i: i+k ].flatten()
+            media = np.median(muestra)
+            blur[j,i] = media
+    return blur 
+
+
 #%% Plot 
 
-celula = np.flip( of.imread( file_cell )[1, 1], 0 )
+celula = np.flip( of.imread( file_cell )[1, -1], 0 )
 plt.figure()
 # plt.title('Trans')
 plt.imshow( celula  )
 # plt.axis('off')
 
 #%%
+# bg = suavizar(celula,100)
+# bg =  cv.medianBlur(celula, (25,25))
+# bg = cv.GaussianBlur(celula,(9,9), 5)
+bg = median_blur( celula, 25 )
 
-celula2 = suavizar(celula,3)
+celula2 = celula - bg
 
-plt.figure()
-plt.hist( celula2.flatten(), bins = np.arange(4096) )
+#%%
+
 # plt.xlim(800,1700)
 
 plt.figure()
 plt.imshow( celula2 )
+
+plt.figure()
+plt.hist( celula2.flatten(), bins = np.arange(-800,2000,1) )
+plt.hist( celula.flatten(), bins = np.arange( 0,3000,1) )
+
  #%%
 
-umbral = filters.threshold_otsu(celula2.flatten(), nbins = np.arange(700, 1700, 1) )
+
+            
+#%%
+
+# umbral = filters.threshold_otsu(celula2.flatten(), nbins = np.arange(700, 1700, 1) )
 
 celula_bin = np.zeros( celula.shape )
-celula_bin[celula2>umbral] = 1
+celula_bin[celula2>30] = 1
 plt.imshow( celula_bin  )
+
+
 
 #%%
 # kernel del filtro
@@ -107,9 +138,11 @@ s = [[1, 2, 1],
       [0, 0, 0], 
       [-1, -2, -1]]
 
-# s = [[1, 1, 1],  
-#      [0, 0, 0], 
-#      [-1, -1, -1]]
+# s = [[1, 2, 3, 2, 1],  
+#      [0, 0, 0, 0, 0], 
+#      [0, 0, 0, 0, 0],
+#      [0, 0, 0, 0, 0],
+#      [-1, -2, -3, -2, -1]]
 
 HR = signal.convolve2d(celula2, s)
 VR = signal.convolve2d(celula2, np.transpose(s))
@@ -120,10 +153,29 @@ plt.figure()
 plt.imshow( celula_bordes )
 plt.title('Filtro de detección de bordes')
 
+
 #%%
 
+mascara = np.zeros( celula_bordes.shape )
+mascara[celula_bordes>100] = 1
+plt.imshow( mascara  )
 
-plt.hist( celula_bordes.flatten(), bins = np.arange(500)  )
+
+
+#%%
+
+# plt.imshow( suavizar(celula_bin, 50)  )
+
+
+# suave1 = suavizar(celula_bin, 50)
+
+mascara = np.zeros( celula.shape )
+mascara[suave1>0.15] = 1
+plt.imshow( mascara  )
+
+#%%
+
+plt.hist(  celula_bordes.flatten(), bins = np.arange(500)  )
 # plt.yscale("log")
 plt.show()
 
@@ -133,11 +185,12 @@ print(umbral0)
 
 #%%
 celula_bordes_bin = np.zeros( celula_bordes.shape )
-celula_bordes_bin[celula_bordes > 100] = 1
+celula_bordes_bin[celula_bordes > 90] = 1
 plt.imshow( celula_bordes_bin  )
 
 
 iio.imwrite('bordesbin.tiff', celula_bordes_bin)
+iio.imwrite('celula.tiff', celula2)
 
 
 #%%
