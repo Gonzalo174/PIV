@@ -62,13 +62,13 @@ pixel_size = field/resolution
 # file_pre = "B1-R1-09-60X-pw20-k2-pre.oif"
 # file_post = "B1-R1-13-60X-pw20-k2-post.oif"
 
-file_cell = "B1-R2-10-60X-pw0.5-k0-tra.oif"
-file_pre = "B1-R2-11-60X-pw20-k2-pre.oif"
-file_post = "B1-R2-12-60X-pw20-k2-post.oif"
+# file_cell = "B1-R2-10-60X-pw0.5-k0-tra.oif"
+# file_pre = "B1-R2-11-60X-pw20-k2-pre.oif"
+# file_post = "B1-R2-12-60X-pw20-k2-post.oif"
 
-# file_cell = "B1-R3-06-60X-pw0.5-k0-tra.oif"
-# file_pre = "B1-R3-07-60X-pw20-k2-pre.oif"
-# file_post = "B1-R3-14-60X-pw20-k2-post.oif"
+file_cell = "B1-R3-06-60X-pw0.5-k0-tra.oif"
+file_pre = "B1-R3-07-60X-pw20-k2-pre.oif"
+file_post = "B1-R3-14-60X-pw20-k2-post.oif"
 
 stack_pre = of.imread( file_pre )[0]
 stack_post = of.imread( file_post )[0]
@@ -76,9 +76,15 @@ celula = of.imread( file_cell )[1, 1]
 
 #%% Analize correlation
 
-pre1 = stack_pre[ 1 ]
-# post0 = centrar_referencia( stack_post[ 2 ] , pre1, 250)
-post0 = centrar_referencia_3D( stack_post, pre1, 250)
+pre1 = stack_pre[ 2 ]
+post0 = centrar_referencia( stack_post[ 2 ] , pre1, 250)
+# post0 = centrar_referencia_3D( stack_post, pre1, 250)
+
+
+#%%
+mascara = iio.imread( "celula_C3.png" )
+b = borde(mascara)
+
 
 #%%
 # pre1 = pre1[750:1450, 800:1500]
@@ -124,8 +130,8 @@ plt.imshow(  np.flip( post0, 0 )[w*a:w*(a+1),w*b:w*(b+1)] , cmap = 'gray', vmin 
 
 
 #%% Reconstruyo con PIV y filtro los datos con, Normalized Median Test (NMT)
-vi = 200
-it = 3
+vi = 128
+it = 2
 exploration = 5 # px
 suave = 1
 Noise_for_NMT = 0.2
@@ -136,7 +142,7 @@ Y_nmt, X_nmt, res = nmt(Y, X, Noise_for_NMT, Threshold_for_NMT)
 
 #%% Ploteo
 l = Y_nmt.shape[0]
-x,y = np.meshgrid(np.arange(l),np.arange(l))
+x,y = np.meshgrid(np.arange(l)*70,np.arange(l)*70)
 marcas = np.arange(6)*int( np.round(field,-2)/(6-1) )
 suave0 = 3
 scale0 = 100
@@ -144,44 +150,46 @@ X_s,Y_s = suavizar(X_nmt,suave0),suavizar(Y_nmt, suave0)
 
 plt.figure()
 # plt.subplot(1,3,1)
-plt.title('Resultado PIV')
-plt.yticks( marcas/pixel_size/( vi/(2**(it-1)) ) , marcas)
-plt.xticks( marcas/pixel_size/( vi/(2**(it-1)) ) , marcas)
-plt.xlabel("Distancia [um]")
-plt.ylabel("Distancia [um]")
-plt.quiver(x,y,X,Y, scale = scale0)
+# plt.title('Resultado PIV')
+# plt.yticks( marcas/pixel_size/( vi/(2**(it-1)) ) , marcas)
+# plt.xticks( marcas/pixel_size/( vi/(2**(it-1)) ) , marcas)
+# plt.xlabel("Distancia [um]")
+# plt.ylabel("Distancia [um]")
+# plt.quiver(x,y,X,Y, scale = scale0)
 
 plt.figure()
 plt.title('Resultado NMT')
-plt.yticks( marcas/pixel_size/( vi/(2**(it-1)) ) , marcas)
-plt.xticks( marcas/pixel_size/( vi/(2**(it-1)) ) , marcas)
+# plt.yticks( marcas/pixel_size/( vi/(2**(it-1)) ) , marcas)
+# plt.xticks( marcas/pixel_size/( vi/(2**(it-1)) ) , marcas)
 plt.xlabel("Distancia [um]")
 plt.ylabel("Distancia [um]")
+plt.imshow(40 - b, cmap = "gray")
 plt.quiver(x,y,X_nmt,Y_nmt, scale = scale0)
+
 # plt.subplot(1,3,2)
-plt.figure()
-plt.title("Suavizado")
-plt.yticks( marcas/pixel_size/( vi/(2**(it-1)) ) , marcas)
-plt.xticks( marcas/pixel_size/( vi/(2**(it-1)) ) , marcas)
-plt.xlabel("Distancia [um]")
-plt.ylabel("Distancia [um]")
-plt.quiver(x,y,X_s,Y_s, scale = scale0)
+# plt.figure()
+# plt.title("Suavizado")
+# plt.yticks( marcas/pixel_size/( vi/(2**(it-1)) ) , marcas)
+# plt.xticks( marcas/pixel_size/( vi/(2**(it-1)) ) , marcas)
+# plt.xlabel("Distancia [um]")
+# plt.ylabel("Distancia [um]")
+# plt.quiver(x,y,X_s,Y_s, scale = scale0)
 # plt.subplot(1,3,3)
-plt.figure()
-plt.title("Posiciones marcadas por el NMT (en blanco)")
-plt.yticks( (marcas[::-1])/pixel_size/( vi/(2**(it-1)) ) ,marcas)
-plt.xticks( marcas/pixel_size/( vi/(2**(it-1)) ) ,marcas)
-plt.imshow( np.fliplr(res), cmap = 'gray' )
-plt.xlabel("Distancia [um]")
-plt.ylabel("Distancia [um]")
+# plt.figure()
+# plt.title("Posiciones marcadas por el NMT (en blanco)")
+# plt.yticks( (marcas[::-1])/pixel_size/( vi/(2**(it-1)) ) ,marcas)
+# plt.xticks( marcas/pixel_size/( vi/(2**(it-1)) ) ,marcas)
+# plt.imshow( np.fliplr(res), cmap = 'gray' )
+# plt.xlabel("Distancia [um]")
+# plt.ylabel("Distancia [um]")
 # blanco son los que detecta y cambia
-plt.figure()
-plt.title("Célula")
-plt.yticks( marcas/pixel_size  ,marcas)
-plt.xticks( marcas/pixel_size  ,marcas)
-plt.xlabel("Distancia [um]")
-plt.ylabel("Distancia [um]")
-plt.imshow( np.flip( celula , 0 ) )
+# plt.figure()
+# plt.title("Célula")
+# plt.yticks( marcas/pixel_size  ,marcas)
+# plt.xticks( marcas/pixel_size  ,marcas)
+# plt.xlabel("Distancia [um]")
+# plt.ylabel("Distancia [um]")
+# plt.imshow( np.flip( celula , 0 ) )
 
 
 #%%

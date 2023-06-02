@@ -22,7 +22,7 @@ plt.rcParams['font.size'] = 15
 #%%
 
 # Specify the folder path
-folder_path = r'C:\Users\gonza\1\Tesis\2023\23.05.18 - Celulas en geles OA Orange'  # Replace with the path to your folder
+folder_path = r'C:\Users\gonza\1\Tesis\2023\23.05.18 - Celulas en geles OA Orange'
 # folder_path = r'C:\Users\gonza\1\Tesis\2022\practica-PIV\gel8'
 
 # Get the list of file names in the folder
@@ -90,20 +90,36 @@ def median_blur(img, kernel_size):
             blur[j,i] = media
     return blur 
 
+def borde(img):
+    s = [[1, 2, 1],  
+          [0, 0, 0], 
+          [-1, -2, -1]]
+
+    HR = signal.convolve2d(img, s)
+    VR = signal.convolve2d(img, np.transpose(s))
+    bordes = (HR**2 + VR**2)**0.5
+    
+    return bordes
+
 
 #%% Plot 
 
 celula = np.flip( of.imread( file_cell )[1, -1], 0 )
+sin_celula = np.flip( of.imread( file_post )[1, 0], 0 )
 plt.figure()
 # plt.title('Trans')
-plt.imshow( celula  )
+plt.figure()
+plt.imshow( celula )
+
+plt.figure()
+plt.imshow( sin_celula )
 # plt.axis('off')
 
 #%%
-# bg = suavizar(celula,100)
+bg = suavizar(celula, 100)
 # bg =  cv.medianBlur(celula, (25,25))
 # bg = cv.GaussianBlur(celula,(9,9), 5)
-bg = median_blur( celula, 25 )
+# bg = median_blur( celula, 25 )
 
 celula2 = celula - bg
 
@@ -118,16 +134,18 @@ plt.figure()
 plt.hist( celula2.flatten(), bins = np.arange(-800,2000,1) )
 plt.hist( celula.flatten(), bins = np.arange( 0,3000,1) )
 
- #%%
+#%%
 
-
+iio.imwrite('celula_C3.png', celula2)
+#%%
+plt.imsave('celula_C3.png', celula2)
             
 #%%
 
 # umbral = filters.threshold_otsu(celula2.flatten(), nbins = np.arange(700, 1700, 1) )
 
 celula_bin = np.zeros( celula.shape )
-celula_bin[celula2>30] = 1
+celula_bin[celula2>80] = 1
 plt.imshow( celula_bin  )
 
 
@@ -157,7 +175,7 @@ plt.title('Filtro de detección de bordes')
 #%%
 
 mascara = np.zeros( celula_bordes.shape )
-mascara[celula_bordes>100] = 1
+mascara[celula_bordes>120] = 1
 plt.imshow( mascara  )
 
 
