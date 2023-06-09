@@ -47,17 +47,17 @@ pixel_size = field/resolution
 
 # Orange 18/5
 
-# file_cell = "09-BOB-R2-60X-pw0.2-k0-zoomX2-tra.oif"
-# file_pre = "10-BOB-R2-60X-pw0.2-k2-zoomX2-pre.oif"
-# file_post = "13-BOB-R2-60X-pw0.2-k2-zoomX2-post.oif"
-
-# file_cell = "01-BOA-R1-60X-pw0.1-k0-tra.oif"
-# file_pre = "02-BOA-R1-60X-pw0.2-k0-pre.oif"
-# file_post = "06-BOA-R1-60X-pw0.2-k2-post.oif"
+file_cell = "01-BOA-R1-60X-pw0.1-k0-tra.oif"
+file_pre = "02-BOA-R1-60X-pw0.2-k0-pre.oif"
+file_post = "06-BOA-R1-60X-pw0.2-k2-post.oif"
 
 # file_cell = "03-BOA-R2-60X-pw0.2-k0-tra.oif"
 # file_pre = "04-BOA-R2-60X-pw0.2-k2-pre.oif"
 # file_post = "05-BOA-R2-60X-pw0.2-k2-post.oif"
+
+# file_cell = "09-BOB-R2-60X-pw0.2-k0-zoomX2-tra.oif"
+# file_pre = "10-BOB-R2-60X-pw0.2-k2-zoomX2-pre.oif"
+# file_post = "13-BOB-R2-60X-pw0.2-k2-zoomX2-post.oif"
 
 # Crimson 11/5
 
@@ -69,51 +69,29 @@ pixel_size = field/resolution
 # file_pre = "B1-R2-11-60X-pw20-k2-pre.oif"
 # file_post = "B1-R2-12-60X-pw20-k2-post.oif"
 
-file_cell = "B1-R3-06-60X-pw0.5-k0-tra.oif"
-file_pre = "B1-R3-07-60X-pw20-k2-pre.oif"
-file_post = "B1-R3-14-60X-pw20-k2-post.oif"
+# file_cell = "B1-R3-06-60X-pw0.5-k0-tra.oif"
+# file_pre = "B1-R3-07-60X-pw20-k2-pre.oif"
+# file_post = "B1-R3-14-60X-pw20-k2-post.oif"
 
 # stack_pre = of.imread( file_pre )[0]
 # stack_post = of.imread( file_post )[0]
 
-
-#%%
-def median_blur(img, kernel_size):
-    L, k = len(img), kernel_size
-    img0 = np.ones([L + k//2, L + k//2])*np.mean( img.flatten() )
-    img0[k//2:L + k//2, k//2:L + k//2] = img
-    blur = np.zeros([L,L])
-    for j in range(L):
-        for i in range(L):
-            muestra = img0[ j: j+k , i: i+k ].flatten()
-            media = np.median(muestra)
-            blur[j,i] = media
-    return blur 
-
-def borde(img):
-    s = [[1, 2, 1],  
-          [0, 0, 0], 
-          [-1, -2, -1]]
-
-    HR = signal.convolve2d(img, s)
-    VR = signal.convolve2d(img, np.transpose(s))
-    bordes = (HR**2 + VR**2)**0.5
-    
-    return bordes
-
-
 #%% Plot 
 
-celula = np.flip( of.imread( file_cell )[1, -1], 0 )
-sin_celula = np.flip( of.imread( file_post )[1, 0], 0 )
-plt.figure()
+celula = of.imread( file_cell )[1, 1]
+# sin_celula = np.flip( of.imread( file_post )[1, 0], 0 )
+
 # plt.title('Trans')
 plt.figure()
 plt.imshow( celula )
 
-plt.figure()
-plt.imshow( sin_celula )
+# plt.figure()
+# plt.imshow( sin_celula )
 # plt.axis('off')
+
+#%%
+# iio.imwrite('celula_Crimson_R1.jpg', celula )
+plt.imsave('celula_Orange_R3.png', celula )
 
 #%%
 bg = suavizar(celula, 100)

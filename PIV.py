@@ -58,17 +58,17 @@ pixel_size = field/resolution
 
 # Crimson 11/5
 
-# file_cell = "B1-R1-08-60X-pw0.5-k0-tra.oif"
-# file_pre = "B1-R1-09-60X-pw20-k2-pre.oif"
-# file_post = "B1-R1-13-60X-pw20-k2-post.oif"
+file_cell = "B1-R1-08-60X-pw0.5-k0-tra.oif"
+file_pre = "B1-R1-09-60X-pw20-k2-pre.oif"
+file_post = "B1-R1-13-60X-pw20-k2-post.oif"
 
 # file_cell = "B1-R2-10-60X-pw0.5-k0-tra.oif"
 # file_pre = "B1-R2-11-60X-pw20-k2-pre.oif"
 # file_post = "B1-R2-12-60X-pw20-k2-post.oif"
 
-file_cell = "B1-R3-06-60X-pw0.5-k0-tra.oif"
-file_pre = "B1-R3-07-60X-pw20-k2-pre.oif"
-file_post = "B1-R3-14-60X-pw20-k2-post.oif"
+# file_cell = "B1-R3-06-60X-pw0.5-k0-tra.oif"
+# file_pre = "B1-R3-07-60X-pw20-k2-pre.oif"
+# file_post = "B1-R3-14-60X-pw20-k2-post.oif"
 
 stack_pre = of.imread( file_pre )[0]
 stack_post = of.imread( file_post )[0]
@@ -76,9 +76,9 @@ celula = of.imread( file_cell )[1, 1]
 
 #%% Analize correlation
 
-pre1 = stack_pre[ 2 ]
-post0 = centrar_referencia( stack_post[ 2 ] , pre1, 250)
-# post0 = centrar_referencia_3D( stack_post, pre1, 250)
+pre1 = stack_pre[ 1 ]
+# post0 = centrar_referencia( stack_post[ 2 ] , pre1, 250)
+post0 = centrar_referencia_3D( stack_post, pre1, 250)
 
 
 #%%
@@ -137,7 +137,7 @@ suave = 1
 Noise_for_NMT = 0.2
 Threshold_for_NMT = 5
 
-Y, X = n_iteraciones_pro(suavizar(post0,suave), suavizar(pre1,suave), vi, it, bordes_extra = exploration)
+Y, X = n_iteraciones(suavizar(post0,suave), suavizar(pre1,suave), vi, it, bordes_extra = exploration)
 Y_nmt, X_nmt, res = nmt(Y, X, Noise_for_NMT, Threshold_for_NMT)
 
 #%% Ploteo
@@ -163,7 +163,7 @@ plt.title('Resultado NMT')
 # plt.xticks( marcas/pixel_size/( vi/(2**(it-1)) ) , marcas)
 plt.xlabel("Distancia [um]")
 plt.ylabel("Distancia [um]")
-plt.imshow(40 - b, cmap = "gray")
+# plt.imshow(40 - b, cmap = "gray")
 plt.quiver(x,y,X_nmt,Y_nmt, scale = scale0)
 
 # plt.subplot(1,3,2)

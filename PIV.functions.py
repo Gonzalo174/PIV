@@ -39,6 +39,28 @@ def duplicar_tamano2(array):
                 
     return array_grande
 
+def median_blur(img, kernel_size):
+    L, k = len(img), kernel_size
+    img0 = np.ones([L + k//2, L + k//2])*np.mean( img.flatten() )
+    img0[k//2:L + k//2, k//2:L + k//2] = img
+    blur = np.zeros([L,L])
+    for j in range(L):
+        for i in range(L):
+            muestra = img0[ j: j+k , i: i+k ].flatten()
+            media = np.median(muestra)
+            blur[j,i] = media
+    return blur 
+
+def borde(img):
+    s = [[1, 2, 1],  
+          [0, 0, 0], 
+          [-1, -2, -1]]
+
+    HR = signal.convolve2d(img, s)
+    VR = signal.convolve2d(img, np.transpose(s))
+    bordes = (HR**2 + VR**2)**0.5
+    
+    return bordes
 
 def suavizar(imagen, lado_del_nucleo):
     nucleo = np.ones([lado_del_nucleo]*2)/lado_del_nucleo**2
@@ -292,17 +314,19 @@ def nmt(Y_, X_, noise, threshold, modo = "promedio"):
                     
                     neighbours_X0 = X[j-1:j+2 , i-1:i+2].flatten()
                     neighbours_Y0 = Y[j-1:j+2 , i-1:i+2].flatten()
-                    result00 = -( 1 - result[j-1:j+2 , i-1:i+2] )
-                    result0 = result00.flatten()
+                    valid = 1 - result[j-1:j+2 , i-1:i+2].flatten()
                     
-                    X[j,i] = sum( neighbours_X0*result0 )/sum(result0) 
-                    Y[j,i] = sum( neighbours_Y0*result0 )/sum(result0) 
+                    if sum(valid) != 0:
+                        X[j,i] = sum( neighbours_X0*valid )/sum(valid) 
+                        Y[j,i] = sum( neighbours_Y0*valid )/sum(valid) 
 
                     # X[j,i] = means_X[j,i]
                     # Y[j,i] = means_Y[j,i]
                     
-        X[:,0], X[:,-1], X[-1,:], X[0,:]  = np.zeros(l), np.zeros(l), np.zeros(l), np.zeros(l)
-        Y[:,0], Y[:,-1], Y[-1,:], Y[0,:]  = np.zeros(l), np.zeros(l), np.zeros(l), np.zeros(l)
+        # X[:,0], X[:,-1], X[-1,:], X[0,:]  = np.zeros(l), np.zeros(l), np.zeros(l), np.zeros(l)
+        # Y[:,0], Y[:,-1], Y[-1,:], Y[0,:]  = np.zeros(l), np.zeros(l), np.zeros(l), np.zeros(l)
+        X[:,0], X[:,-1], X[-1,:], X[0,:]  = X[:,0]*(1-result[:,0]), X[:,-1]*(1-result[:,-1]), X[-1,:]*(1-result[-1,:]), X[0,:]*(1-result[0,:])
+        Y[:,0], Y[:,-1], Y[-1,:], Y[0,:]  = Y[:,0]*(1-result[:,0]), Y[:,-1]*(1-result[:,-1]), Y[-1,:]*(1-result[-1,:]), Y[0,:]*(1-result[0,:])
 
     return Y, X, result
 
