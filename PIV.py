@@ -58,13 +58,13 @@ pixel_size = field/resolution
 
 # Crimson 11/5
 
-file_cell = "B1-R1-08-60X-pw0.5-k0-tra.oif"
-file_pre = "B1-R1-09-60X-pw20-k2-pre.oif"
-file_post = "B1-R1-13-60X-pw20-k2-post.oif"
+# file_cell = "B1-R1-08-60X-pw0.5-k0-tra.oif"
+# file_pre = "B1-R1-09-60X-pw20-k2-pre.oif"
+# file_post = "B1-R1-13-60X-pw20-k2-post.oif"
 
-# file_cell = "B1-R2-10-60X-pw0.5-k0-tra.oif"
-# file_pre = "B1-R2-11-60X-pw20-k2-pre.oif"
-# file_post = "B1-R2-12-60X-pw20-k2-post.oif"
+file_cell = "B1-R2-10-60X-pw0.5-k0-tra.oif"
+file_pre = "B1-R2-11-60X-pw20-k2-pre.oif"
+file_post = "B1-R2-12-60X-pw20-k2-post.oif"
 
 # file_cell = "B1-R3-06-60X-pw0.5-k0-tra.oif"
 # file_pre = "B1-R3-07-60X-pw20-k2-pre.oif"
@@ -76,9 +76,10 @@ celula = of.imread( file_cell )[1, 1]
 
 #%% Analize correlation
 
-pre1 = stack_pre[ 1 ]
-# post0 = centrar_referencia( stack_post[ 2 ] , pre1, 250)
-post0 = centrar_referencia_3D( stack_post, pre1, 250)
+n = 2
+pre1 = stack_pre[ n ]
+post0 = centrar_referencia( stack_post[ n ] , pre1, 250)
+# post0 = centrar_referencia_3D( stack_post, pre1, 250)
 
 
 #%%
@@ -113,20 +114,122 @@ plt.axis('off')
 
 #%% Plot 
 
-a, b = 17,6
-w = 32
+a, b = 1.5,4.5
+w = 256
+
+pre1_chico = pre1[ int(w*a) : int(w*(a+1)), int(w*b) : int(w*(b+1)) ]
+post0_chico = post0[int(w*a) : int(w*(a+1)), int(w*b) : int(w*(b+1))] 
+
 
 plt.figure()
 plt.title('Pre')
-plt.imshow( np.flip( pre1, 0 )[w*a:w*(a+1),w*b:w*(b+1)] , cmap = 'gray', vmin = 80, vmax = 700)
+plt.imshow( pre1_chico , cmap = 'gray', vmin = 80, vmax = 700)
+
 
 plt.figure()
 plt.title('Post')
-plt.imshow(  np.flip( post0, 0 )[w*a:w*(a+1),w*b:w*(b+1)] , cmap = 'gray', vmin = 80, vmax = 700)
+plt.imshow( post0_chico , cmap = 'gray', vmin = 80, vmax = 700)
 
-# plt.figure()
-# plt.title('Trans')
-# plt.imshow(np.flip( celula , 0 )[w*a:w*(a+1),w*b:w*(b+1)]  )
+plt.figure()
+plt.title('Trans')
+plt.imshow(celula, cmap = 'gray')
+plt.plot( [w*b,w*b,w*(b+1),w*(b+1),w*b], [w*a,w*(a+1),w*(a+1),w*a,w*a], linestyle = 'dashed', lw = 3, color = 'r'  )
+
+
+#%%
+
+imagen = np.zeros([*pre1_chico.shape,3])
+imagen[:,:,1] = suavizar( pre1_chico - np.mean(pre1_chico) - 10, 9)   #pre_bin
+imagen[:,:,0] = suavizar( post0_chico - np.mean(post0_chico) - 10, 9)   #post_bin
+
+
+
+
+scale_length = 1  # Length of the scale bar in pixels
+scale_pixels = scale_length/pixel_size
+scale_unit = 'µm'  # Unit of the scale bar
+
+plt.figure()
+plt.imshow( imagen )
+
+
+# plt.imsave("relativo", imagen)
+
+
+#%%
+plt.rcParams['font.size'] = 21
+
+borde = 10
+pre_win = pre1[ int(w*a) : int(w*(a+1)), int(w*b) : int(w*(b+1)) ]
+post_bigwin = post0[int(w*a)-borde : int(w*(a+1))+borde, int(w*b)-borde : int(w*(b+1))+borde] 
+
+cross_corr = signal.correlate(post_bigwin - post_bigwin.mean(), pre_win - pre_win.mean(), mode = 'valid', method="fft")
+# cross_corr = suavizar( cross_corr, 3 )
+
+y0, x0 = np.unravel_index(cross_corr.argmax(), cross_corr.shape)
+y, x = -(y0 - borde), -(x0 - borde)
+
+print(x,y)
+
+plt.figure()
+plt.yticks( np.arange( borde )*2 +1, -(np.arange( borde )*2 +1- borde) )
+plt.xticks( np.arange( borde )*2 +1, np.arange( borde )*2 +1- borde )
+plt.xlabel("Distancia [px]")
+plt.ylabel("Distancia [px]")
+plt.title("Correlación cruzada")
+plt.text( borde+x, y0+1.2, f'({x},{y})', color='r', weight='bold', ha='center')
+plt.imshow( np.flip(cross_corr,1) )
+plt.plot( [borde+x], [y0], 'o',c = 'red', markersize = 10 )
+
+
+
+#%%
+plt.rcParams['font.size'] = 21
+borde = 10
+ 
+pre_win =      pre1[ int(w*a)        : int(w*(2*a+1)/2)         , int(w*b)                  : int(w*(2*b+1)/2)        ]
+post_bigwin = post0[ int(w*a)-borde  : int(w*(2*a+1)/2) + borde , int(w*b) - borde          : int(w*(2*b+1)/2) + borde] 
+
+# pre_win =      pre1[ int(w*a)         : int(w*(2*a+1)/2)          , int(w*(2*b+1)/2)         : int(w*(b+1))        ]
+# post_bigwin = post0[ int(w*a) - borde : int(w*(2*a+1)/2) + borde  , int(w*(2*b+1)/2) - borde : int(w*(b+1)) + borde] 
+
+# pre_win =      pre1[ int(w*(2*a+1)/2)        : int(w*(a+1))       , int(w*b)                  : int(w*(2*b+1)/2)        ]
+# post_bigwin = post0[int(w*(2*a+1)/2) - borde : int(w*(a+1)) + borde , int(w*b) - borde          : int(w*(2*b+1)/2) + borde] 
+
+# pre_win =      pre1[ int(w*(2*a+1)/2)        : int(w*(a+1))    ,int(w*(2*b+1)/2)         : int(w*(b+1))       ]
+# post_bigwin = post0[int(w*(2*a+1)/2) - borde : int(w*(a+1))+borde, int(w*(2*b+1)/2) - borde : int(w*(b+1)) + borde] 
+
+cross_corr = signal.correlate(post_bigwin - post_bigwin.mean(), pre_win - pre_win.mean(), mode = 'valid', method="fft")
+cross_corr = suavizar( cross_corr, 3 )
+y0, x0 = np.unravel_index(cross_corr.argmax(), cross_corr.shape)
+y, x = -(y0 - borde), -(x0 - borde)
+
+print(x,y)
+
+plt.figure()
+plt.yticks( np.arange( borde )*2 +1, -(np.arange( borde )*2 +1- borde) )
+plt.xticks( np.arange( borde )*2 +1, np.arange( borde )*2 +1- borde )
+plt.xlabel("Distancia [px]")
+plt.ylabel("Distancia [px]")
+plt.title("Correlación cruzada")
+plt.text( borde+x, y0+1.2, f'({x},{y})', color='r', weight='bold', ha='center')
+plt.imshow( np.flip(cross_corr,1) )
+plt.plot( [borde+x], [y0], 'o',c = 'red', markersize = 10 )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 #%% Reconstruyo con PIV y filtro los datos con, Normalized Median Test (NMT)
@@ -142,7 +245,7 @@ Y_nmt, X_nmt, res = nmt(Y, X, Noise_for_NMT, Threshold_for_NMT)
 
 #%% Ploteo
 l = Y_nmt.shape[0]
-x,y = np.meshgrid(np.arange(l)*70,np.arange(l)*70)
+x,y = np.meshgrid(np.arange(l),np.arange(l))
 marcas = np.arange(6)*int( np.round(field,-2)/(6-1) )
 suave0 = 3
 scale0 = 100
@@ -150,30 +253,29 @@ X_s,Y_s = suavizar(X_nmt,suave0),suavizar(Y_nmt, suave0)
 
 plt.figure()
 # plt.subplot(1,3,1)
-# plt.title('Resultado PIV')
-# plt.yticks( marcas/pixel_size/( vi/(2**(it-1)) ) , marcas)
-# plt.xticks( marcas/pixel_size/( vi/(2**(it-1)) ) , marcas)
-# plt.xlabel("Distancia [um]")
-# plt.ylabel("Distancia [um]")
-# plt.quiver(x,y,X,Y, scale = scale0)
+plt.title('Resultado PIV')
+plt.yticks( marcas/pixel_size/( vi/(2**(it-1)) ) , marcas)
+plt.xticks( marcas/pixel_size/( vi/(2**(it-1)) ) , marcas)
+plt.xlabel("Distancia [um]")
+plt.ylabel("Distancia [um]")
+plt.quiver(x,y,X,Y, scale = scale0)
 
 plt.figure()
 plt.title('Resultado NMT')
-# plt.yticks( marcas/pixel_size/( vi/(2**(it-1)) ) , marcas)
-# plt.xticks( marcas/pixel_size/( vi/(2**(it-1)) ) , marcas)
+plt.yticks( marcas/pixel_size/( vi/(2**(it-1)) ) , marcas)
+plt.xticks( marcas/pixel_size/( vi/(2**(it-1)) ) , marcas)
 plt.xlabel("Distancia [um]")
 plt.ylabel("Distancia [um]")
-# plt.imshow(40 - b, cmap = "gray")
 plt.quiver(x,y,X_nmt,Y_nmt, scale = scale0)
 
 # plt.subplot(1,3,2)
-# plt.figure()
-# plt.title("Suavizado")
-# plt.yticks( marcas/pixel_size/( vi/(2**(it-1)) ) , marcas)
-# plt.xticks( marcas/pixel_size/( vi/(2**(it-1)) ) , marcas)
-# plt.xlabel("Distancia [um]")
-# plt.ylabel("Distancia [um]")
-# plt.quiver(x,y,X_s,Y_s, scale = scale0)
+plt.figure()
+plt.title("Suavizado")
+plt.yticks( marcas/pixel_size/( vi/(2**(it-1)) ) , marcas)
+plt.xticks( marcas/pixel_size/( vi/(2**(it-1)) ) , marcas)
+plt.xlabel("Distancia [um]")
+plt.ylabel("Distancia [um]")
+plt.quiver(x,y,X_s,Y_s, scale = scale0)
 # plt.subplot(1,3,3)
 # plt.figure()
 # plt.title("Posiciones marcadas por el NMT (en blanco)")

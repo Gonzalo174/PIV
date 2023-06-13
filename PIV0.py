@@ -28,22 +28,23 @@ pixel_size = field/resolution
 # file_pre = "02-BOA-R1-60X-pw0.2-k0-pre.oif"
 # file_post = "06-BOA-R1-60X-pw0.2-k2-post.oif"
 
-file_cell = "03-BOA-R2-60X-pw0.2-k0-tra.oif"
-file_pre = "04-BOA-R2-60X-pw0.2-k2-pre.oif"
-file_post = "05-BOA-R2-60X-pw0.2-k2-post.oif"
+# file_cell = "03-BOA-R2-60X-pw0.2-k0-tra.oif"
+# file_pre = "04-BOA-R2-60X-pw0.2-k2-pre.oif"
+# file_post = "05-BOA-R2-60X-pw0.2-k2-post.oif"
 
 # file_cell = "09-BOB-R2-60X-pw0.2-k0-zoomX2-tra.oif"
 # file_pre = "10-BOB-R2-60X-pw0.2-k2-zoomX2-pre.oif"
 # file_post = "13-BOB-R2-60X-pw0.2-k2-zoomX2-post.oif"
+
 # Crimson 11/5
 
 # file_cell = "B1-R1-08-60X-pw0.5-k0-tra.oif"
 # file_pre = "B1-R1-09-60X-pw20-k2-pre.oif"
 # file_post = "B1-R1-13-60X-pw20-k2-post.oif"
 
-# file_cell = "B1-R2-10-60X-pw0.5-k0-tra.oif"
-# file_pre = "B1-R2-11-60X-pw20-k2-pre.oif"
-# file_post = "B1-R2-12-60X-pw20-k2-post.oif"
+file_cell = "B1-R2-10-60X-pw0.5-k0-tra.oif"
+file_pre = "B1-R2-11-60X-pw20-k2-pre.oif"
+file_post = "B1-R2-12-60X-pw20-k2-post.oif"
 
 # file_cell = "B1-R3-06-60X-pw0.5-k0-tra.oif"
 # file_pre = "B1-R3-07-60X-pw20-k2-pre.oif"
@@ -55,15 +56,15 @@ celula = of.imread( file_cell )[1, 1]
 
 #%% Analize correlation
 
-pre1 = stack_pre[ 3 ]
-# post0 = centrar_referencia( stack_post[ 1 ] , pre1, 250)
-post0 = centrar_referencia_3D( stack_post, pre1, 250)
+pre1 = stack_pre[ 1 ]
+post0 = centrar_referencia( stack_post[ 1 ] , pre1, 250)
+# post0 = centrar_referencia_3D( stack_post, pre1, 250)
 
 #%%
 mascara1 = iio.imread( "celula_Orange_R2_cell1.png" )
-# mascara2 = iio.imread( "celula_Orange_R3_cell2.png" )
-# mascara3 = iio.imread( "celula_Crimson_R3_cell3.png" )
-# mascara4 = iio.imread( "celula_Crimson_R3_cell4.png" )
+mascara2 = iio.imread( "celula_Orange_R3_cell2.png" )
+mascara3 = iio.imread( "celula_Crimson_R3_cell3.png" )
+mascara4 = iio.imread( "celula_Crimson_R3_cell4.png" )
 # mascara5 = iio.imread( "celula_Crimson_R3_cell5.png" )
 
 #%% Plot 
@@ -89,7 +90,7 @@ plt.imshow( np.flip( celula , 0 ) , cmap = 'gray' )
 
 #%% Reconstruyo con PIV y filtro los datos con, Normalized Median Test (NMT)
 vi = 128
-it = 2
+it = 3
 exploration = 5 # px
 
 Noise_for_NMT = 0.2
@@ -102,8 +103,24 @@ X_s,Y_s = suavizar(X_nmt,suave0),suavizar(Y_nmt, suave0)
 
 
 #%%
+r = np.sqrt(Y_s**2 + X_s**2)
+r_mean = np.mean( r.flatten()*pixel_size )
+plt.figure()
+plt.title("Distribucion NMT suavizado, r_mean: " + str( np.round(r_mean,3)) + ' um'  )
+plt.xlabel('Desplazamiento [um]')
+plt.ylabel('Cuentas')
+plt.grid(True)
+# plt.ylim([0,600])
+plt.hist(r.flatten()*pixel_size, bins = np.arange(-0.01, np.round( (exploration+1)*pixel_size,1 ) , 0.02)  )
+plt.show()
+
+
+
+
+#%%
 
 l = len(Y_nmt)
+scale0 = 100
 field_length = int( l*vi/it )
 image_length = len( celula )
 d = (image_length - field_length)
@@ -125,14 +142,14 @@ plt.title("Mapa de deformación")
 
 
 # plt.imshow( celula , cmap = 'gray' , alpha = 0.5)
-plt.imshow( 1-mascara1 , cmap = 'Greens', alpha = 0.2 )
+# plt.imshow( 1-mascara1 , cmap = 'Greens', alpha = 0.2 )
 # plt.imshow( 1-mascara2 , cmap = 'Reds', alpha = 0.2 )
 # plt.imshow( 1-mascara3 , cmap = 'Blues', alpha = 0.2 )
 # plt.imshow( 1-mascara4 , cmap = 'Oranges', alpha = 0.2 )
 # plt.imshow( 1-mascara5 , cmap = 'Purples', alpha = 0.2 )
-plt.quiver(x,y,X_s,-Y_s, scale = scale0)
+plt.quiver(x,y,X_s,Y_s, scale = scale0)
 
-
+#%%
 scale_length = 10  # Length of the scale bar in pixels
 scale_pixels = scale_length/pixel_size
 scale_unit = 'µm'  # Unit of the scale bar
@@ -201,7 +218,6 @@ plt.hist(r.flatten()*pixel_size, bins = np.arange(-0.01, np.round( (exploration+
 print(np.mean( r.flatten()*pixel_size ))
 #%%
 
-X_s,Y_s = suavizar(X_nmt,suave0),suavizar(Y_nmt, suave0)
 r = np.sqrt(Y_s**2 + X_s**2)
 r_mean = np.mean( r.flatten()*pixel_size )
 plt.figure()

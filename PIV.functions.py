@@ -119,9 +119,9 @@ def una_iteracion_pro( imagen_post, imagen_pre, tamano_de_la_ventana, bordes_ext
     if bordes_extra >= bordes_limite:
         bordes_extra = bordes_limite
         
-    if traslacion_Y.all() == 0:
+    if traslacion_Y.any() == 0:
         traslacion_Y = np.zeros([divis,divis])
-    if traslacion_X.all() == 0:
+    if traslacion_X.any() == 0:
         traslacion_X = np.zeros([divis,divis])
 
     Y = np.zeros([divis,divis])
@@ -207,9 +207,9 @@ def una_iteracion( imagen_post, imagen_pre, tamano_de_la_ventana, bordes_extra =
     if bordes_extra >= bordes_limite:
         bordes_extra = bordes_limite
         
-    if traslacion_Y.all() == 0:
+    if traslacion_Y.any() == 0:
         traslacion_Y = np.zeros([divis,divis])
-    if traslacion_X.all() == 0:
+    if traslacion_X.any() == 0:
         traslacion_X = np.zeros([divis,divis])
 
     Y = np.zeros([divis,divis])
