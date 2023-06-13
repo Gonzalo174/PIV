@@ -76,15 +76,18 @@ celula = of.imread( file_cell )[1, 1]
 
 #%% Analize correlation
 
-n = 2
+n = 0
 pre1 = stack_pre[ n ]
 post0 = centrar_referencia( stack_post[ n ] , pre1, 250)
 # post0 = centrar_referencia_3D( stack_post, pre1, 250)
 
 
 #%%
-mascara = iio.imread( "celula_C3.png" )
-b = borde(mascara)
+mascara1 = iio.imread( "celula_Crimson_R2_cell1.png" )
+mascara2 = iio.imread( "celula_Crimson_R2_cell2.png" )
+mascara3 = iio.imread( "celula_Crimson_R2_cell3.png" )
+mascara4 = iio.imread( "celula_Crimson_R2_cell4.png" )
+# mascara5 = iio.imread( "celula_Crimson_R3_cell5.png" )
 
 
 #%%
@@ -112,7 +115,7 @@ plt.figure()
 plt.imshow(np.flip( celula , 0 )  )
 plt.axis('off')
 
-#%% Plot 
+#%% Ventanas de exploracion
 
 a, b = 1.5,4.5
 w = 256
@@ -134,26 +137,6 @@ plt.figure()
 plt.title('Trans')
 plt.imshow(celula, cmap = 'gray')
 plt.plot( [w*b,w*b,w*(b+1),w*(b+1),w*b], [w*a,w*(a+1),w*(a+1),w*a,w*a], linestyle = 'dashed', lw = 3, color = 'r'  )
-
-
-#%%
-
-imagen = np.zeros([*pre1_chico.shape,3])
-imagen[:,:,1] = suavizar( pre1_chico - np.mean(pre1_chico) - 10, 9)   #pre_bin
-imagen[:,:,0] = suavizar( post0_chico - np.mean(post0_chico) - 10, 9)   #post_bin
-
-
-
-
-scale_length = 1  # Length of the scale bar in pixels
-scale_pixels = scale_length/pixel_size
-scale_unit = 'µm'  # Unit of the scale bar
-
-plt.figure()
-plt.imshow( imagen )
-
-
-# plt.imsave("relativo", imagen)
 
 
 #%%

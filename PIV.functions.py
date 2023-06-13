@@ -12,12 +12,15 @@ from wand.image import Image
 
 #%%
 
-def duplicar_tamano(array):
-    largo = array.shape[0]*2
-    array_grande = np.zeros([largo, largo])
-    for j0 in range(largo):
-        for i0 in range(largo):
-            array_grande[j0,i0] = array[j0//2,i0//2]
+def duplicar_tamano(array2D):
+    if type( array2D ) != np.ndarray:
+        array_grande = array2D
+    else:
+        largo = len(array2D)*2
+        array_grande = np.zeros([largo, largo])
+        for j0 in range(largo):
+            for i0 in range(largo):
+                array_grande[j0,i0] = array2D[j0//2,i0//2]
     return array_grande
 
 def duplicar_tamano2(array):
@@ -97,7 +100,7 @@ def arma_pares(stack_post, stack_pre, bordes_extra):
     return "Funcion en proceso"
 
 
-def una_iteracion_pro( imagen_post, imagen_pre, tamano_de_la_ventana, bordes_extra = 10, traslacion_Y = np.zeros([1,1]), traslacion_X = np.zeros([1,1]), bordes_limite = 0):
+def una_iteracion( imagen_post, imagen_pre, tamano_de_la_ventana, bordes_extra = 10, traslacion_Y = "None", traslacion_X = "None", bordes_limite = 0):
     '''
     imagen_post(2D-array): imagen de las esferas con el sustrato relajado
     imagen_pre(2D-array): imagen de las esferas con el sustrato deformado
@@ -114,110 +117,22 @@ def una_iteracion_pro( imagen_post, imagen_pre, tamano_de_la_ventana, bordes_ext
         if bordes_limite == 0:
             bordes_limite = tamano_de_la_ventana//2
             
-    divis = int( (tamano_de_las_imagenes-2*bordes_limite)/tamano_de_la_ventana  )
-
-    if bordes_extra >= bordes_limite:
-        bordes_extra = bordes_limite
-        
-    if traslacion_Y.any() == 0:
-        traslacion_Y = np.zeros([divis,divis])
-    if traslacion_X.any() == 0:
-        traslacion_X = np.zeros([divis,divis])
+    divis = int( (tamano_de_las_imagenes - 2*bordes_limite)/tamano_de_la_ventana  )
 
     Y = np.zeros([divis,divis])
     X = np.zeros([divis,divis])
-    
-    for j in range(divis):
-        for i in range(divis):
-            
-            Ay_pre = (j)*tamano_de_la_ventana    +  bordes_limite  + int(traslacion_Y[j,i])
-            By_pre = (j+1)*tamano_de_la_ventana  +  bordes_limite  + int(traslacion_Y[j,i])
-            Ax_pre = (i)*tamano_de_la_ventana    +  bordes_limite  + int(traslacion_X[j,i])
-            Bx_pre = (i+1)*tamano_de_la_ventana  +  bordes_limite  + int(traslacion_X[j,i])
-
-            Ay_post = (j)*(tamano_de_la_ventana)   +  bordes_limite - bordes_extra
-            By_post = (j+1)*(tamano_de_la_ventana) +  bordes_limite + bordes_extra
-            Ax_post = (i)*(tamano_de_la_ventana)   +  bordes_limite - bordes_extra
-            Bx_post = (i+1)*(tamano_de_la_ventana) +  bordes_limite + bordes_extra
-            
-            pre_win = duplicar_tamano2( imagen_pre[ Ay_pre : By_pre, Ax_pre : Bx_pre ] )
-            post_bigwin = duplicar_tamano2( imagen_post[ Ay_post : By_post, Ax_post : Bx_post ] )
-    
-            cross_corr = signal.correlate(post_bigwin - post_bigwin.mean(), pre_win - pre_win.mean(), mode = 'valid', method="fft")
-            
-            cross_corr = suavizar( cross_corr, 3 )
-            
-            y0, x0 = np.unravel_index(cross_corr.argmax(), cross_corr.shape)
-            y, x = -(y0 - 2*bordes_extra), -(x0 - 2*bordes_extra)
-        
-            Y[j,i] = y/2
-            X[j,i] = x/2  
-
-            # plt.figure()
-            # plt.imshow( cross_corr )
-            # plt.title(str(i)+"-"+str(j))
-    return Y+traslacion_Y, X+traslacion_X
-
-
-def n_iteraciones_pro( imagen_post, imagen_pre, ventana_inicial, cantidad_de_iteraciones = 3, bordes_extra = 1000):
-    n = cantidad_de_iteraciones   
-    
-    tamano_de_las_imagenes = imagen_pre.shape[0]
-    
-    limite = ( tamano_de_las_imagenes - ventana_inicial*(tamano_de_las_imagenes//ventana_inicial) )//2
-    if limite == 0:
-        limite = ventana_inicial//2    
-    
-    limite = int( (imagen_post.shape[0] - ventana_inicial*(imagen_post.shape[0]//ventana_inicial) )//2 )
-    if limite == 0:
-        limite = ventana_inicial//2
-
-    tam0 = ( imagen_post.shape[0]//ventana_inicial )    
-    X = np.zeros([tam0, tam0])
-    Y = np.zeros([tam0, tam0])
-
-    for n0 in range(n):
-        ventana =  ventana_inicial//(2**n0)
-        print( n0, ventana )
-        Y, X = una_iteracion_pro( imagen_post, imagen_pre, ventana, bordes_extra, duplicar_tamano(Y), duplicar_tamano(X), limite )
-
-    return Y, X
-
-
-
-def una_iteracion( imagen_post, imagen_pre, tamano_de_la_ventana, bordes_extra = 10, traslacion_Y = np.zeros([1,1]), traslacion_X = np.zeros([1,1]), bordes_limite = 0):
-    '''
-    imagen_post(2D-array): imagen de las esferas con el sustrato relajado
-    imagen_pre(2D-array): imagen de las esferas con el sustrato deformado
-    tamaño_de_la_ventana(int): lado de la ventana de escaneo, que es cuadrada
-    bordes_extra(int): indica cuántos píxeles de borde de más se considerarán en la ventana de la imagen post, lo que determina también las posiciones relativas en las que se estudiará la correlación.
-    traslación_X/Y(2D-array): para una segunda o tercera iteración, indica la deformación calculada con una ventana mayor
-    bordes_limite(int): indica el margen entre la imagen completa y el conjunto de ventanas de escaneo, estás difieren en tamano en general
-    '''
-    tamano_de_las_imagenes = imagen_pre.shape[0]
-    
-    # aca debe calcularse en base a la 1ra ventana y despues se duplica, si no pueden sumarse ventanas extra
-    if bordes_limite == 0:
-        bordes_limite = ( tamano_de_las_imagenes - tamano_de_la_ventana*(tamano_de_las_imagenes//tamano_de_la_ventana) )//2
-        if bordes_limite == 0:
-            bordes_limite = tamano_de_la_ventana//2
-            
-    divis = int( (tamano_de_las_imagenes-2*bordes_limite)/tamano_de_la_ventana  )
 
     if bordes_extra >= bordes_limite:
         bordes_extra = bordes_limite
-        
-    if traslacion_Y.any() == 0:
+    
+    if type( traslacion_Y ) == str:
         traslacion_Y = np.zeros([divis,divis])
-    if traslacion_X.any() == 0:
+    if type( traslacion_X ) == str:
         traslacion_X = np.zeros([divis,divis])
 
-    Y = np.zeros([divis,divis])
-    X = np.zeros([divis,divis])
-    
     for j in range(divis):
         for i in range(divis):
-            
+
             Ay_pre = (j)*tamano_de_la_ventana    +  bordes_limite  + int(traslacion_Y[j,i])
             By_pre = (j+1)*tamano_de_la_ventana  +  bordes_limite  + int(traslacion_Y[j,i])
             Ax_pre = (i)*tamano_de_la_ventana    +  bordes_limite  + int(traslacion_X[j,i])
@@ -233,9 +148,9 @@ def una_iteracion( imagen_post, imagen_pre, tamano_de_la_ventana, bordes_extra =
     
             cross_corr = signal.correlate(post_bigwin - post_bigwin.mean(), pre_win - pre_win.mean(), mode = 'valid', method="fft")
             
-            cross_corr = suavizar( cross_corr, 3 )
+            cross_corr = suavizar( cross_corr , 3 )
             
-            y0, x0 = np.unravel_index(cross_corr.argmax(), cross_corr.shape)
+            y0, x0 = np.unravel_index( cross_corr.argmax(), cross_corr.shape )
             y, x = -(y0 - bordes_extra), -(x0 - bordes_extra)
         
             Y[j,i] = y
@@ -244,6 +159,7 @@ def una_iteracion( imagen_post, imagen_pre, tamano_de_la_ventana, bordes_extra =
             # plt.figure()
             # plt.imshow( cross_corr )
             # plt.title(str(i)+"-"+str(j))
+            
     return Y+traslacion_Y, X+traslacion_X
 
 def n_iteraciones( imagen_post, imagen_pre, ventana_inicial, cantidad_de_iteraciones = 3, bordes_extra = 1000):
@@ -259,9 +175,8 @@ def n_iteraciones( imagen_post, imagen_pre, ventana_inicial, cantidad_de_iteraci
     if limite == 0:
         limite = ventana_inicial//2
 
-    tam0 = ( imagen_post.shape[0]//ventana_inicial )    
-    X = np.zeros([tam0, tam0])
-    Y = np.zeros([tam0, tam0])
+    X = "None" #np.zeros([tam0//2, tam0//2])
+    Y = "None" #np.zeros([tam0//2, tam0//2])
 
     for n0 in range(n):
         ventana =  ventana_inicial//(2**n0)
@@ -359,5 +274,111 @@ def deformar( imagen_post, grado, tamano, cantidad):
             imagen[ int(cen[0] - d) : int(cen[0] + d) , int(cen[1] - d) : int(cen[1] + d) ] = implosion
 
     return imagen
+
+
+
+
+
+
+
+
+
+def una_iteracion_pro( imagen_post, imagen_pre, tamano_de_la_ventana, bordes_extra = 10, traslacion_Y = np.zeros([1,1]), traslacion_X = np.zeros([1,1]), bordes_limite = 0):
+    '''
+    imagen_post(2D-array): imagen de las esferas con el sustrato relajado
+    imagen_pre(2D-array): imagen de las esferas con el sustrato deformado
+    tamaño_de_la_ventana(int): lado de la ventana de escaneo, que es cuadrada
+    bordes_extra(int): indica cuántos píxeles de borde de más se considerarán en la ventana de la imagen post, lo que determina también las posiciones relativas en las que se estudiará la correlación.
+    traslación_X/Y(2D-array): para una segunda o tercera iteración, indica la deformación calculada con una ventana mayor
+    bordes_limite(int): indica el margen entre la imagen completa y el conjunto de ventanas de escaneo, estás difieren en tamano en general
+    '''
+    tamano_de_las_imagenes = imagen_pre.shape[0]
+    
+    # aca debe calcularse en base a la 1ra ventana y despues se duplica, si no pueden sumarse ventanas extra
+    if bordes_limite == 0:
+        bordes_limite = ( tamano_de_las_imagenes - tamano_de_la_ventana*(tamano_de_las_imagenes//tamano_de_la_ventana) )//2
+        if bordes_limite == 0:
+            bordes_limite = tamano_de_la_ventana//2
+            
+    divis = int( (tamano_de_las_imagenes-2*bordes_limite)/tamano_de_la_ventana  )
+
+    if bordes_extra >= bordes_limite:
+        bordes_extra = bordes_limite
+        
+    if traslacion_Y.any() == 0:
+        traslacion_Y = np.zeros([divis,divis])
+    if traslacion_X.any() == 0:
+        traslacion_X = np.zeros([divis,divis])
+
+    Y = np.zeros([divis,divis])
+    X = np.zeros([divis,divis])
+    
+    for j in range(divis):
+        for i in range(divis):
+            
+            Ay_pre = (j)*tamano_de_la_ventana    +  bordes_limite  + int(traslacion_Y[j,i])
+            By_pre = (j+1)*tamano_de_la_ventana  +  bordes_limite  + int(traslacion_Y[j,i])
+            Ax_pre = (i)*tamano_de_la_ventana    +  bordes_limite  + int(traslacion_X[j,i])
+            Bx_pre = (i+1)*tamano_de_la_ventana  +  bordes_limite  + int(traslacion_X[j,i])
+
+            Ay_post = (j)*(tamano_de_la_ventana)   +  bordes_limite - bordes_extra
+            By_post = (j+1)*(tamano_de_la_ventana) +  bordes_limite + bordes_extra
+            Ax_post = (i)*(tamano_de_la_ventana)   +  bordes_limite - bordes_extra
+            Bx_post = (i+1)*(tamano_de_la_ventana) +  bordes_limite + bordes_extra
+            
+            pre_win = duplicar_tamano2( imagen_pre[ Ay_pre : By_pre, Ax_pre : Bx_pre ] )
+            post_bigwin = duplicar_tamano2( imagen_post[ Ay_post : By_post, Ax_post : Bx_post ] )
+    
+            cross_corr = signal.correlate(post_bigwin - post_bigwin.mean(), pre_win - pre_win.mean(), mode = 'valid', method="fft")
+            
+            cross_corr = suavizar( cross_corr, 3 )
+            
+            y0, x0 = np.unravel_index(cross_corr.argmax(), cross_corr.shape)
+            y, x = -(y0 - 2*bordes_extra), -(x0 - 2*bordes_extra)
+        
+            Y[j,i] = y/2
+            X[j,i] = x/2  
+
+            # plt.figure()
+            # plt.imshow( cross_corr )
+            # plt.title(str(i)+"-"+str(j))
+    return Y+traslacion_Y, X+traslacion_X
+
+
+def n_iteraciones_pro( imagen_post, imagen_pre, ventana_inicial, cantidad_de_iteraciones = 3, bordes_extra = 1000):
+    n = cantidad_de_iteraciones   
+    
+    tamano_de_las_imagenes = imagen_pre.shape[0]
+    
+    limite = ( tamano_de_las_imagenes - ventana_inicial*(tamano_de_las_imagenes//ventana_inicial) )//2
+    if limite == 0:
+        limite = ventana_inicial//2    
+    
+    limite = int( (imagen_post.shape[0] - ventana_inicial*(imagen_post.shape[0]//ventana_inicial) )//2 )
+    if limite == 0:
+        limite = ventana_inicial//2
+
+    tam0 = ( imagen_post.shape[0]//ventana_inicial )    
+    X = np.zeros([tam0, tam0])
+    Y = np.zeros([tam0, tam0])
+
+    for n0 in range(n):
+        ventana =  ventana_inicial//(2**n0)
+        print( n0, ventana )
+        Y, X = una_iteracion_pro( imagen_post, imagen_pre, ventana, bordes_extra, duplicar_tamano(Y), duplicar_tamano(X), limite )
+
+    return Y, X
+
+
+
+
+
+
+
+
+
+
+
+
 
 
