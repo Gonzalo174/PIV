@@ -69,6 +69,27 @@ def suavizar(imagen, lado_del_nucleo):
     nucleo = np.ones([lado_del_nucleo]*2)/lado_del_nucleo**2
     return signal.convolve2d(imagen, nucleo, mode='same')
 
+def area_upper(binary_map, kernel_size = 50, threshold = 0.1):
+    l = len(binary_map)
+    mask = np.zeros([l,l])
+    smooth_map = suavizar( binary_map, kernel_size)
+    mask[ smooth_map > threshold ] = 1
+    return mask
+
+def center_of_mass(binary_map):
+    CMy = 0
+    CMx = 0
+    mass = np.sum(binary_map)
+    l = len(binary_map)
+    for j in range(l):
+        for i in range(l):
+            CMy += j*binary_map[j,i]/mass
+            CMx += i*binary_map[j,i]/mass
+    return ( int(CMy), int(CMx) )
+
+
+
+
 def centrar_referencia(imagen_post, imagen_pre, bordes_extra, maximo = False):
     l = imagen_pre.shape[0]
     b = bordes_extra
@@ -245,6 +266,9 @@ def nmt(Y_, X_, noise, threshold, modo = "promedio"):
 
     return Y, X, result
 
+
+
+
 def deformar( imagen_post, grado, tamano, cantidad):
     imagen = np.copy( imagen_post )
     l = imagen.shape[0]
@@ -281,7 +305,7 @@ def deformar( imagen_post, grado, tamano, cantidad):
 
 
 
-
+#%%
 
 def una_iteracion_pro( imagen_post, imagen_pre, tamano_de_la_ventana, bordes_extra = 10, traslacion_Y = np.zeros([1,1]), traslacion_X = np.zeros([1,1]), bordes_limite = 0):
     '''
