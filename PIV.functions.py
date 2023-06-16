@@ -7,7 +7,8 @@ Created on Sat May 13 18:14:57 2023
 
 import numpy as np
 import imageio.v3 as iio
-from scipy import signal    # Para aplicar filtros
+from scipy import signal
+from scipy.optimize import curve_fit
 from wand.image import Image
 
 #%%
@@ -54,7 +55,7 @@ def median_blur(img, kernel_size):
             blur[j,i] = media
     return blur 
 
-def borde(img):
+def contour(img):
     s = [[1, 2, 1],  
           [0, 0, 0], 
           [-1, -2, -1]]
@@ -121,7 +122,43 @@ def arma_pares(stack_post, stack_pre, bordes_extra):
     return "Funcion en proceso"
 
 
-def una_iteracion( imagen_post, imagen_pre, tamano_de_la_ventana, bordes_extra = 10, traslacion_Y = "None", traslacion_X = "None", bordes_limite = 0):
+def curve_fit_pro(f, xdata, ydata, p0=None, sigma=None, absolute_sigma=False, check_finite=True, method=None, jac=None, full_output=False):
+    try:
+        # Attempt to perform the curve fit
+        popt = p0
+        popt, pcov = curve_fit(f, xdata, ydata, p0, maxfev = 10000)#, sigma, absolute_sigma, check_finite, method, jac, full_output )
+
+    except RuntimeError:
+        popt, pcov = p0, np.ones([len(p0),len(p0)])
+        
+    return popt, pcov
+
+
+
+def gaussian_2d(xy, amplitude, xo, yo, sigma_x, sigma_y, theta, offset):
+    x, y = xy
+    xo = float(xo)
+    yo = float(yo)
+    a = (np.cos(theta) ** 2) / (2 * sigma_x ** 2) + (np.sin(theta) ** 2) / (2 * sigma_y ** 2)
+    b = -(np.sin(2 * theta)) / (4 * sigma_x ** 2) + (np.sin(2 * theta)) / (4 * sigma_y ** 2)
+    c = (np.sin(theta) ** 2) / (2 * sigma_x ** 2) + (np.cos(theta) ** 2) / (2 * sigma_y ** 2)
+    g = amplitude * np.exp(-(a * ((x - xo) ** 2) + 2 * b * (x - xo) * (y - yo) + c * ((y - yo) ** 2))) + offset
+    return g.ravel()
+
+def gaussian_2d_plot(xy, amplitude, xo, yo, sigma_x, sigma_y, theta, offset):
+    x, y = xy
+    xo = float(xo)
+    yo = float(yo)
+    a = (np.cos(theta) ** 2) / (2 * sigma_x ** 2) + (np.sin(theta) ** 2) / (2 * sigma_y ** 2)
+    b = -(np.sin(2 * theta)) / (4 * sigma_x ** 2) + (np.sin(2 * theta)) / (4 * sigma_y ** 2)
+    c = (np.sin(theta) ** 2) / (2 * sigma_x ** 2) + (np.cos(theta) ** 2) / (2 * sigma_y ** 2)
+    g = amplitude * np.exp(-(a * ((x - xo) ** 2) + 2 * b * (x - xo) * (y - yo) + c * ((y - yo) ** 2))) + offset
+    return g
+
+
+
+
+def una_iteracion( imagen_post, imagen_pre, tamano_de_la_ventana, bordes_extra = 10, traslacion_Y = "None", traslacion_X = "None", bordes_limite = 0, mode = "Default"):
     '''
     imagen_post(2D-array): imagen de las esferas con el sustrato relajado
     imagen_pre(2D-array): imagen de las esferas con el sustrato deformado
@@ -150,6 +187,8 @@ def una_iteracion( imagen_post, imagen_pre, tamano_de_la_ventana, bordes_extra =
         traslacion_Y = np.zeros([divis,divis])
     if type( traslacion_X ) == str:
         traslacion_X = np.zeros([divis,divis])
+        
+    cc_area = signal.correlate(imagen_post - imagen_post.mean(), imagen_pre - imagen_pre.mean(), mode = 'valid', method="fft")/(tamano_de_las_imagenes**2)
 
     for j in range(divis):
         for i in range(divis):
@@ -167,23 +206,74 @@ def una_iteracion( imagen_post, imagen_pre, tamano_de_la_ventana, bordes_extra =
             pre_win = imagen_pre[ Ay_pre : By_pre, Ax_pre : Bx_pre ]
             post_bigwin = imagen_post[ Ay_post : By_post, Ax_post : Bx_post ]
     
-            cross_corr = signal.correlate(post_bigwin - post_bigwin.mean(), pre_win - pre_win.mean(), mode = 'valid', method="fft")
+            cross_corr = signal.correlate(post_bigwin - post_bigwin.mean(), pre_win - pre_win.mean(), mode = 'valid', method = "fft") 
             
-            cross_corr = suavizar( cross_corr , 3 )
+            if mode == "Smooth":
+                cross_corr = suavizar( cross_corr , 3 )
+                
+                y0, x0 = np.unravel_index( cross_corr.argmax(), cross_corr.shape )
+                y, x = -(y0 - bordes_extra), -(x0 - bordes_extra)
+                
+                cc_area_iteration = cross_corr[y0,x0]/(tamano_de_la_ventana**2)
+                if cc_area_iteration > cc_area/2:
+                    Y[j,i] = y
+                    X[j,i] = x
+                    
+            if mode == "Fit":
+                cross_corr = suavizar( cross_corr , 3 )
+                y0, x0 = np.unravel_index( cross_corr.argmax(), cross_corr.shape )
+                y, x = -(y0 - bordes_extra), -(x0 - bordes_extra)
+                
+                cc_area_iteration = cross_corr[y0,x0]/(tamano_de_la_ventana**2)
+                if cc_area_iteration > cc_area/2:
+                    # d = 3
+                    data = cross_corr#[max(y0-d,0):min(y0+d+1,2*bordes_extra+1), max(x0-d,0):min(x0+d+1,2*bordes_extra+1)]
+                    u, v = np.meshgrid(np.linspace(-bordes_extra, bordes_extra, 2*bordes_extra+1), np.linspace(-bordes_extra, bordes_extra, 2*bordes_extra+1) )
+                    # u, v = np.meshgrid( np.arange( max(y0-d,0),min(y0+d+1,2*bordes_extra+1),1) , np.arange(max(x0-d,0),min(x0+d+1,2*bordes_extra+1),1) )
+                    # print(data.shape, u)
+                    amplitude0 = np.max(data)-np.min(data)
+                    initial_guess = [amplitude0, -x, -y, 4, 4, 0, np.min(data)]
+                    popt, pcov = curve_fit_pro(gaussian_2d, (u, v), data.ravel(), p0 = initial_guess )
+                    amplitude, xo, yo, sigma_x, sigma_y, theta, offset = popt
+                    
+                    Y[j,i] = -yo
+                    X[j,i] = -xo
+                    
+                # plt.figure()
+                # plt.yticks( np.arange( bordes_extra )*2 +1, -(np.arange( bordes_extra )*2 + 1 - bordes_extra) )
+                # plt.xticks( np.arange( bordes_extra )*2 +1, np.arange( bordes_extra )*2 + 1 - bordes_extra )
+                # plt.xlabel("Distancia [px]")
+                # plt.ylabel("Distancia [px]")
+                # plt.title("Correlación cruzada")
+                # plt.imshow( np.flip(cross_corr,1) )
+                # plt.plot( [bordes_extra+x], [y0], 'o',c = 'red', markersize = 10 )
+                # plt.plot( [bordes_extra-xo], [bordes_extra+yo], 'o',c = 'green', markersize = 10 )
+                # plt.colorbar()
+    
+                
+            if mode == "Default":
+                y0, x0 = np.unravel_index( cross_corr.argmax(), cross_corr.shape )
+                y, x = -(y0 - bordes_extra), -(x0 - bordes_extra)
+                
+                cc_area_iteration = cross_corr[y0,x0]/(tamano_de_la_ventana**2)
+                if cc_area_iteration > cc_area/2:
+                    Y[j,i] = y
+                    X[j,i] = x  
             
-            y0, x0 = np.unravel_index( cross_corr.argmax(), cross_corr.shape )
-            y, x = -(y0 - bordes_extra), -(x0 - bordes_extra)
-        
-            Y[j,i] = y
-            X[j,i] = x    
-
+            if mode == "No control":
+                y0, x0 = np.unravel_index( cross_corr.argmax(), cross_corr.shape )
+                y, x = -(y0 - bordes_extra), -(x0 - bordes_extra)
+                
+                Y[j,i] = y
+                X[j,i] = x  
+            
             # plt.figure()
             # plt.imshow( cross_corr )
             # plt.title(str(i)+"-"+str(j))
             
     return Y+traslacion_Y, X+traslacion_X
 
-def n_iteraciones( imagen_post, imagen_pre, ventana_inicial, cantidad_de_iteraciones = 3, bordes_extra = 1000):
+def n_iteraciones( imagen_post, imagen_pre, ventana_inicial, cantidad_de_iteraciones = 3, bordes_extra = 1000, mode = "Default"):
     n = cantidad_de_iteraciones   
     
     tamano_de_las_imagenes = imagen_pre.shape[0]
@@ -202,7 +292,7 @@ def n_iteraciones( imagen_post, imagen_pre, ventana_inicial, cantidad_de_iteraci
     for n0 in range(n):
         ventana =  ventana_inicial//(2**n0)
         print( n0, ventana )
-        Y, X = una_iteracion( imagen_post, imagen_pre, ventana, bordes_extra, duplicar_tamano(Y), duplicar_tamano(X), limite )
+        Y, X = una_iteracion( imagen_post, imagen_pre, ventana, bordes_extra, duplicar_tamano(Y), duplicar_tamano(X), limite, mode )
 
     return Y, X
 
@@ -265,8 +355,6 @@ def nmt(Y_, X_, noise, threshold, modo = "promedio"):
         Y[:,0], Y[:,-1], Y[-1,:], Y[0,:]  = Y[:,0]*(1-result[:,0]), Y[:,-1]*(1-result[:,-1]), Y[-1,:]*(1-result[-1,:]), Y[0,:]*(1-result[0,:])
 
     return Y, X, result
-
-
 
 
 def deformar( imagen_post, grado, tamano, cantidad):

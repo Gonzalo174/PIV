@@ -7,8 +7,10 @@ Created on Thu May  4 23:14:37 2023
 import numpy as np
 import matplotlib.pyplot as plt
 import imageio.v3 as iio
-from scipy import ndimage   # Para rotar imagenes
-from scipy import signal    # Para aplicar filtros
+from scipy import ndimage
+from scipy import signal
+from scipy import optimize
+from scipy.optimize import curve_fit
 import oiffile as of
 import os
 
@@ -62,13 +64,13 @@ pixel_size = field/resolution
 # file_pre = "B1-R1-09-60X-pw20-k2-pre.oif"
 # file_post = "B1-R1-13-60X-pw20-k2-post.oif"
 
-file_cell = "B1-R2-10-60X-pw0.5-k0-tra.oif"
-file_pre = "B1-R2-11-60X-pw20-k2-pre.oif"
-file_post = "B1-R2-12-60X-pw20-k2-post.oif"
+# file_cell = "B1-R2-10-60X-pw0.5-k0-tra.oif"
+# file_pre = "B1-R2-11-60X-pw20-k2-pre.oif"
+# file_post = "B1-R2-12-60X-pw20-k2-post.oif"
 
-# file_cell = "B1-R3-06-60X-pw0.5-k0-tra.oif"
-# file_pre = "B1-R3-07-60X-pw20-k2-pre.oif"
-# file_post = "B1-R3-14-60X-pw20-k2-post.oif"
+file_cell = "B1-R3-06-60X-pw0.5-k0-tra.oif"
+file_pre = "B1-R3-07-60X-pw20-k2-pre.oif"
+file_post = "B1-R3-14-60X-pw20-k2-post.oif"
 
 stack_pre = of.imread( file_pre )[0]
 stack_post = of.imread( file_post )[0]
@@ -83,11 +85,11 @@ post0 = centrar_referencia( stack_post[ n ] , pre1, 250)
 
 
 #%%
-mascara1 = iio.imread( "celula_Crimson_R2_cell1.png" )
-mascara2 = iio.imread( "celula_Crimson_R2_cell2.png" )
-mascara3 = iio.imread( "celula_Crimson_R2_cell3.png" )
-mascara4 = iio.imread( "celula_Crimson_R2_cell4.png" )
-# mascara5 = iio.imread( "celula_Crimson_R3_cell5.png" )
+mascara1 = iio.imread( "celula_Crimson_R3_cell1.png" )
+mascara2 = iio.imread( "celula_Crimson_R3_cell2.png" )
+mascara3 = iio.imread( "celula_Crimson_R3_cell3.png" )
+mascara4 = iio.imread( "celula_Crimson_R3_cell4.png" )
+mascara5 = iio.imread( "celula_Crimson_R3_cell5.png" )
 
 
 #%%
@@ -117,8 +119,9 @@ plt.axis('off')
 
 #%% Ventanas de exploracion
 
-a, b = 1.5,4.5
-w = 256
+# a, b = 1.5,4.5
+a, b = 2, 5
+w = 32
 
 pre1_chico = pre1[ int(w*a) : int(w*(a+1)), int(w*b) : int(w*(b+1)) ]
 post0_chico = post0[int(w*a) : int(w*(a+1)), int(w*b) : int(w*(b+1))] 
@@ -133,10 +136,15 @@ plt.figure()
 plt.title('Post')
 plt.imshow( post0_chico , cmap = 'gray', vmin = 80, vmax = 700)
 
-plt.figure()
-plt.title('Trans')
-plt.imshow(celula, cmap = 'gray')
-plt.plot( [w*b,w*b,w*(b+1),w*(b+1),w*b], [w*a,w*(a+1),w*(a+1),w*a,w*a], linestyle = 'dashed', lw = 3, color = 'r'  )
+# plt.figure()
+# plt.title('Post')
+# plt.imshow(post0, cmap = 'gray', vmax = 400)
+# plt.plot( [w*b,w*b,w*(b+1),w*(b+1),w*b], [w*a,w*(a+1),w*(a+1),w*a,w*a], linestyle = 'dashed', lw = 3, color = 'r'  )
+
+# plt.figure()
+# plt.title('Trans')
+# plt.imshow(celula, cmap = 'gray')
+# plt.plot( [w*b,w*b,w*(b+1),w*(b+1),w*b], [w*a,w*(a+1),w*(a+1),w*a,w*a], linestyle = 'dashed', lw = 3, color = 'r'  )
 
 
 #%%
@@ -152,17 +160,62 @@ cross_corr = signal.correlate(post_bigwin - post_bigwin.mean(), pre_win - pre_wi
 y0, x0 = np.unravel_index(cross_corr.argmax(), cross_corr.shape)
 y, x = -(y0 - borde), -(x0 - borde)
 
+u, v = np.meshgrid(np.linspace(-borde, borde, 2*borde+1), np.linspace(-borde, borde, 2*borde+1))
+data = cross_corr.ravel()
+initial_guess = [np.max(data)-np.min(data), -x, -y, 3, 3, 0, np.min(data)]
+popt, pcov = curve_fit(gaussian_2d, (u, v), data, p0=initial_guess)
+amplitude, xo, yo, sigma_x, sigma_y, theta, offset = popt
+
 print(x,y)
+print(-xo,-yo)
+print( np.mean( cross_corr**2 - gauss_fit**2 ) )
+
+#%%
+plt.figure()
+plt.yticks( np.arange( borde )*2 +1, -(np.arange( borde )*2 + 1 - borde) )
+plt.xticks( np.arange( borde )*2 +1, np.arange( borde )*2 + 1 - borde )
+plt.xlabel("Distancia [px]")
+plt.ylabel("Distancia [px]")
+plt.title("Correlación cruzada")
+# plt.text( borde+x, y0+1.2, f'({x},{y})', color='r', weight='bold', ha='center')
+plt.imshow( np.flip(cross_corr,1) )
+plt.plot( [borde+x], [y0], 'o',c = 'red', markersize = 10 )
+plt.plot( [borde-xo], [borde+yo], 'o',c = 'green', markersize = 10 )
+plt.colorbar()
+
+# print( signal.correlate(post0 - post0.mean(), pre1 - pre1.mean(), mode = 'valid', method="fft")[0][0]/(1600**2)  )
+# print(np.mean(cross_corr[y0-1:y0+2,x0-1:x0+2])/(w**2))
+
+#%%
 
 plt.figure()
 plt.yticks( np.arange( borde )*2 +1, -(np.arange( borde )*2 +1- borde) )
 plt.xticks( np.arange( borde )*2 +1, np.arange( borde )*2 +1- borde )
 plt.xlabel("Distancia [px]")
 plt.ylabel("Distancia [px]")
-plt.title("Correlación cruzada")
-plt.text( borde+x, y0+1.2, f'({x},{y})', color='r', weight='bold', ha='center')
-plt.imshow( np.flip(cross_corr,1) )
+plt.title("Correlación cruzada - Ajuste")
+gauss_fit = gaussian_2d_plot( (u,v), *popt  )
+# gauss_fit = gaussian_2d_plot( (u,v), *initial_guess  )
+
+plt.imshow(  np.flip(gauss_fit,1) )
 plt.plot( [borde+x], [y0], 'o',c = 'red', markersize = 10 )
+plt.plot( [borde-xo], [borde+yo], 'o',c = 'green', markersize = 10 )
+plt.colorbar()
+
+
+#%%
+
+plt.plot( cross_corr[:,-7] )
+plt.plot( gauss_fit[:,-7] )
+
+
+
+
+
+
+
+
+
 
 
 
@@ -205,25 +258,15 @@ plt.plot( [borde+x], [y0], 'o',c = 'red', markersize = 10 )
 
 
 
-
-
-
-
-
-
-
-
-
-
 #%% Reconstruyo con PIV y filtro los datos con, Normalized Median Test (NMT)
 vi = 128
-it = 2
-exploration = 5 # px
+it = 3
+exploration = 8 # px
 suave = 1
 Noise_for_NMT = 0.2
 Threshold_for_NMT = 5
 
-Y, X = n_iteraciones(suavizar(post0,suave), suavizar(pre1,suave), vi, it, bordes_extra = exploration)
+Y, X = n_iteraciones(suavizar(post0,suave), suavizar(pre1,suave), vi, it, bordes_extra = exploration, mode = "Fit")
 Y_nmt, X_nmt, res = nmt(Y, X, Noise_for_NMT, Threshold_for_NMT)
 
 #%% Ploteo
@@ -231,7 +274,7 @@ l = Y_nmt.shape[0]
 x,y = np.meshgrid(np.arange(l),np.arange(l))
 marcas = np.arange(6)*int( np.round(field,-2)/(6-1) )
 suave0 = 3
-scale0 = 100
+scale0 = 250
 X_s,Y_s = suavizar(X_nmt,suave0),suavizar(Y_nmt, suave0)
 
 plt.figure()

@@ -96,36 +96,25 @@ plt.imshow( np.flip( celula , 0 ) , cmap = 'gray' )
 
 
 #%% Reconstruyo con PIV y filtro los datos con, Normalized Median Test (NMT)
-vi = 256
+vi = 128
 it = 3
-exploration = 5 # px
+exploration = 8 # px
 
 Noise_for_NMT = 0.2
 Threshold_for_NMT = 5
+modo = "Fit"
 
-Y, X = n_iteraciones( post0, pre1, vi, it, bordes_extra = exploration)
+Y, X = n_iteraciones( post0, pre1, vi, it, bordes_extra = exploration, mode = modo)
 Y_nmt, X_nmt, res = nmt(Y, X, Noise_for_NMT, Threshold_for_NMT)
 suave0 = 3
 X_s,Y_s = suavizar(X_nmt,suave0),suavizar(Y_nmt, suave0)
 
 
-#%%
-r = np.sqrt(Y_s**2 + X_s**2)*pixel_size
-r_mean = np.mean( r.flatten()*pixel_size )
-plt.figure()
-plt.title("Distribucion NMT suavizado, r_mean: " + str( np.round(r_mean,3)) + ' um'  )
-plt.xlabel('Desplazamiento [um]')
-plt.ylabel('Cuentas')
-plt.grid(True)
-# plt.ylim([0,600])
-plt.hist(r.flatten(), bins = np.arange(-0.01, np.round( np.max(r)+0.01 ,1 ) , 0.02)  )
-plt.show()
-
 
 #%% Plot
 
 l = len(Y_nmt)
-scale0 = 100
+scale0 = 150
 wind = vi/( 2**(it-1) )
 field_length = int( l*wind )
 image_length = len( celula )
@@ -135,7 +124,7 @@ r_plot = np.arange(l)*wind + wind/2 + d
 x,y = np.meshgrid( r_plot , r_plot )
 
 plt.figure()
-plt.title("Mapa de deformación")
+plt.title("Mapa de deformación - " + modo)
 
 # plt.imshow( celula , cmap = 'gray' , alpha = 0.5)
 plt.imshow( 1-mascara1 , cmap = 'Greens', alpha = 0.2 )
@@ -168,6 +157,17 @@ plt.ylim([image_length-d,d])
 
 plt.show()
 
+#%%
+r = np.sqrt(Y_s**2 + X_s**2)*pixel_size
+r_mean = np.mean( r.flatten()*pixel_size )
+plt.figure()
+plt.title("Distribucion NMT suavizado, r_mean: " + str( np.round(r_mean,3)) + ' um'  )
+plt.xlabel('Desplazamiento [um]')
+plt.ylabel('Cuentas')
+plt.grid(True)
+# plt.ylim([0,600])
+plt.hist(r.flatten(), bins = np.arange(-0.01, np.round( np.max(r)+0.01 ,1 ) , 0.02)  )
+plt.show()
 
 
 #%% Nanospheres intensity histogram
