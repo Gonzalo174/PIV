@@ -15,7 +15,7 @@ import os
 
 #%%
 plt.rcParams['figure.figsize'] = [9,9]
-plt.rcParams['font.size'] = 15
+plt.rcParams['font.size'] = 16
 
 #%% Import files and set metadata
 field = 105.6
@@ -98,28 +98,30 @@ plt.imshow( np.flip( celula , 0 ) , cmap = 'gray' )
 #%% Reconstruyo con PIV y filtro los datos con, Normalized Median Test (NMT)
 vi = 128
 it = 3
-exploration = 8 # px
+exploration = 7 # px
 
 Noise_for_NMT = 0.2
 Threshold_for_NMT = 5
 modo = "Fit"
+mapas = False
+suave0 = 3
+
 
 Y, X = n_iteraciones( post0, pre1, vi, it, bordes_extra = exploration, mode = modo)
 Y_nmt, X_nmt, res = nmt(Y, X, Noise_for_NMT, Threshold_for_NMT)
-suave0 = 3
 X_s,Y_s = suavizar(X_nmt,suave0),suavizar(Y_nmt, suave0)
-
-
 
 #%% Plot
 
+graficar = 1 # 0:NMT - 1:Suave
 l = len(Y_nmt)
-scale0 = 150
+scale0 = 200
 wind = vi/( 2**(it-1) )
 field_length = int( l*wind )
 image_length = len( celula )
 d = (image_length - field_length)/2
 r_plot = np.arange(l)*wind + wind/2 + d
+alfa = 0.2
 
 x,y = np.meshgrid( r_plot , r_plot )
 
@@ -127,14 +129,16 @@ plt.figure()
 plt.title("Mapa de deformación - " + modo)
 
 # plt.imshow( celula , cmap = 'gray' , alpha = 0.5)
-plt.imshow( 1-mascara1 , cmap = 'Greens', alpha = 0.2 )
-plt.imshow( 1-mascara2 , cmap = 'Reds', alpha = 0.2 )
-plt.imshow( 1-mascara3 , cmap = 'Blues', alpha = 0.2 )
-plt.imshow( 1-mascara4 , cmap = 'Oranges', alpha = 0.2 )
-plt.imshow( 1-mascara5 , cmap = 'Purples', alpha = 0.2 )
+plt.imshow( 1-mascara2 , cmap = 'Reds', alpha = alfa, vmax = 0.1 )
+plt.imshow( 1-mascara3 , cmap = 'Blues', alpha = alfa, vmax = 0.1 )
+plt.imshow( 1-mascara4 , cmap = 'Oranges', alpha = alfa, vmax = 0.1 )
+plt.imshow( 1-mascara5 , cmap = 'Purples', alpha = alfa, vmax = 0.1 )
+plt.imshow( 1-mascara1 , cmap = 'Greens', alpha = alfa, vmax = 0.1 )
 
-# plt.quiver(x,y,X_nmt,-Y_nmt, scale = scale0)
-plt.quiver(x,y,X_s,-Y_s, scale = scale0)
+if graficar == 0:
+    plt.quiver(x,y,X_nmt,-Y_nmt, scale = scale0)
+elif graficar == 1:
+    plt.quiver(x,y,X_s,-Y_s, scale = scale0)
 
 scale_length = 10  # Length of the scale bar in pixels
 scale_pixels = scale_length/pixel_size
@@ -143,12 +147,12 @@ scale_unit = 'µm'  # Unit of the scale bar
 # Add the scale bar
 scale_bar_length = int(scale_pixels / plt.rcParams['figure.dpi'])  # Convert scale length to figure units
 start_x = d + wind  # Starting x-coordinate of the scale bar
-start_y = image_length -( d + wind/2 + 40 )# Starting y-coordinate of the scale bar
+start_y = image_length -( d + wind )# Starting y-coordinate of the scale bar
 
 plt.plot([start_x+20, start_x + scale_pixels-20], [start_y-25, start_y-25], color='white', linewidth = 40)
 for i in range(20):
     plt.plot([start_x, start_x + scale_pixels], [start_y + i - 10, start_y + i - 10], color='black', linewidth = 1)
-plt.text(start_x + scale_bar_length, start_y-25, f'{scale_length} {scale_unit}', color='black', weight='bold')#, ha='center')
+plt.text(start_x + scale_pixels/2, start_y-25, f'{scale_length} {scale_unit}', color='black', weight='bold', ha='center')
 
 plt.xticks([])
 plt.yticks([])
@@ -166,7 +170,7 @@ plt.xlabel('Desplazamiento [um]')
 plt.ylabel('Cuentas')
 plt.grid(True)
 # plt.ylim([0,600])
-plt.hist(r.flatten(), bins = np.arange(-0.01, np.round( np.max(r)+0.01 ,1 ) , 0.02)  )
+plt.hist(r.flatten(), bins = np.arange(-0.01, np.round( np.max(r)+0.01 ,1 ) , 0.03)  )
 plt.show()
 
 
@@ -186,17 +190,19 @@ plt.title('post')
 #%% gif
 
 n = 0
-# vi = 256
-windows = [200, 220, 256, 280, 300]
+vi = 128
+# windows = [200, 220, 256, 280, 300]
 it = 3
-exploration = 5 # px
+exploration = 7 # px
+scale0 = 200
+modo = "Fit"
 
 Noise_for_NMT = 0.2
 Threshold_for_NMT = 5
 
 image_filenames = []
 
-for vi in windows:
+for n in range(len(stack_pre)):
     pre1 = stack_pre[ n ]
     post0 = centrar_referencia( stack_post[ n ] , pre1, 250)
 
@@ -206,7 +212,6 @@ for vi in windows:
     X_s,Y_s = suavizar(X_nmt,suave0),suavizar(Y_nmt, suave0)
     
     l = len(Y_nmt)
-    scale0 = 100
     wind = vi/( 2**(it-1) )
     field_length = int( l*wind )
     image_length = len( celula )
@@ -216,8 +221,8 @@ for vi in windows:
     x,y = np.meshgrid( r_plot , r_plot )
     
     plt.figure()
-    # plt.title("Mapa de deformación - z = -" + str(n/2 + 3) + ' µm')
-    plt.title("Mapa de deformación - w = " + str(int(vi/4)) + ' px')
+    plt.title("Mapa de deformación - z = -" + str(n/2 + 3) + ' µm')
+    # plt.title("Mapa de deformación - w = " + str(int(vi/4)) + ' px')
     
     plt.imshow( 1-mascara1 , cmap = 'Greens', alpha = 0.2 )
     plt.imshow( 1-mascara2 , cmap = 'Reds', alpha = 0.2 )
@@ -232,17 +237,19 @@ for vi in windows:
     scale_pixels = scale_length/pixel_size
     scale_unit = 'µm'  # Unit of the scale bar
     scale_bar_length = int(scale_pixels / plt.rcParams['figure.dpi'])  # Convert scale length to figure units
-    start_x = 100 #d + wind  # Starting x-coordinate of the scale bar
-    start_y = image_length - 100 #-( d + wind/2 + 40 )# Starting y-coordinate of the scale bar
+    start_x = d + wind  # Starting x-coordinate of the scale bar
+    start_y = image_length -( d + wind )# Starting y-coordinate of the scale bar
+
     plt.plot([start_x+20, start_x + scale_pixels-20], [start_y-25, start_y-25], color='white', linewidth = 40)
     for i in range(20):
         plt.plot([start_x, start_x + scale_pixels], [start_y + i - 10, start_y + i - 10], color='black', linewidth = 1)
-    plt.text(start_x + scale_bar_length, start_y-25, f'{scale_length} {scale_unit}', color='black', weight='bold')#, ha='center')
+    plt.text(start_x + scale_pixels/2, start_y-25, f'{scale_length} {scale_unit}', color='black', weight='bold', ha='center')
+
     plt.xticks([])
     plt.yticks([])
     # plt.xlim([d,image_length-d])
     # plt.ylim([image_length-d,d])
-    name =  str(vi) + ".png" 
+    name =  str(n) + ".png" 
     plt.savefig(  name  )
     image_filenames.append( name )
 
@@ -295,7 +302,7 @@ for filename in image_filenames:
     images.append(image)
 
 # Save the images as an animated GIF
-output_filename = 'res.gif'  # Specify the output filename
+output_filename = 'defo32_fit.gif'  # Specify the output filename
 images[0].save(output_filename, save_all=True, append_images=images[1:], duration=500, loop=0)
 
 
@@ -516,7 +523,7 @@ plt.imshow( 1-mascara1 , cmap = 'Greens', alpha = 0.2 )
 plt.imshow( 1-mascara2 , cmap = 'Reds', alpha = 0.2 )
 plt.imshow( 1-mascara3 , cmap = 'Blues', alpha = 0.2 )
 plt.imshow( 1-mascara4 , cmap = 'Oranges', alpha = 0.2 )
-# plt.imshow( 1-mascara5 , cmap = 'Purples', alpha = 0.2 )
+plt.imshow( 1-mascara5 , cmap = 'Purples', alpha = 0.2 )
 
 # plt.quiver(x,y,X_nmt,-Y_nmt, scale = scale0)
 plt.quiver(x,y,X_s,-Y_s, scale = scale0)
