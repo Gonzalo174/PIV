@@ -120,7 +120,7 @@ plt.axis('off')
 #%% Ventanas de exploracion
 
 # a, b = 1.5,4.5
-a, b = 2, 5
+a, b = 10, 5
 w = 32
 
 pre1_chico = pre1[ int(w*a) : int(w*(a+1)), int(w*b) : int(w*(b+1)) ]
@@ -150,7 +150,7 @@ plt.imshow( post0_chico , cmap = 'gray', vmin = 80, vmax = 700)
 #%%
 plt.rcParams['font.size'] = 21
 
-borde = 10
+borde = 5
 pre_win = pre1[ int(w*a) : int(w*(a+1)), int(w*b) : int(w*(b+1)) ]
 post_bigwin = post0[int(w*a)-borde : int(w*(a+1))+borde, int(w*b)-borde : int(w*(b+1))+borde] 
 
@@ -165,6 +165,7 @@ data = cross_corr.ravel()
 initial_guess = [np.max(data)-np.min(data), -x, -y, 3, 3, 0, np.min(data)]
 popt, pcov = curve_fit(gaussian_2d, (u, v), data, p0=initial_guess)
 amplitude, xo, yo, sigma_x, sigma_y, theta, offset = popt
+gauss_fit = gaussian_2d_plot( (u,v), *popt  )
 
 print(x,y)
 print(-xo,-yo)
@@ -178,7 +179,7 @@ plt.xlabel("Distancia [px]")
 plt.ylabel("Distancia [px]")
 plt.title("Correlación cruzada")
 # plt.text( borde+x, y0+1.2, f'({x},{y})', color='r', weight='bold', ha='center')
-plt.imshow( np.flip(cross_corr,1) )
+plt.imshow( np.flip(cross_corr,1) )# , vmin = 0, vmax = 500000 )
 plt.plot( [borde+x], [y0], 'o',c = 'red', markersize = 10 )
 plt.plot( [borde-xo], [borde+yo], 'o',c = 'green', markersize = 10 )
 plt.colorbar()
@@ -194,7 +195,7 @@ plt.xticks( np.arange( borde )*2 +1, np.arange( borde )*2 +1- borde )
 plt.xlabel("Distancia [px]")
 plt.ylabel("Distancia [px]")
 plt.title("Correlación cruzada - Ajuste")
-gauss_fit = gaussian_2d_plot( (u,v), *popt  )
+
 # gauss_fit = gaussian_2d_plot( (u,v), *initial_guess  )
 
 plt.imshow(  np.flip(gauss_fit,1) )
@@ -265,8 +266,10 @@ exploration = 8 # px
 suave = 1
 Noise_for_NMT = 0.2
 Threshold_for_NMT = 5
+modo = "Fit"
+mapas = True
 
-Y, X = n_iteraciones(suavizar(post0,suave), suavizar(pre1,suave), vi, it, bordes_extra = exploration, mode = "Fit")
+Y, X = n_iteraciones(suavizar(post0,suave), suavizar(pre1,suave), vi, it, bordes_extra = exploration, mode = modo)
 Y_nmt, X_nmt, res = nmt(Y, X, Noise_for_NMT, Threshold_for_NMT)
 
 #%% Ploteo
@@ -277,17 +280,17 @@ suave0 = 3
 scale0 = 250
 X_s,Y_s = suavizar(X_nmt,suave0),suavizar(Y_nmt, suave0)
 
-plt.figure()
-# plt.subplot(1,3,1)
-plt.title('Resultado PIV')
-plt.yticks( marcas/pixel_size/( vi/(2**(it-1)) ) , marcas)
-plt.xticks( marcas/pixel_size/( vi/(2**(it-1)) ) , marcas)
-plt.xlabel("Distancia [um]")
-plt.ylabel("Distancia [um]")
-plt.quiver(x,y,X,Y, scale = scale0)
+# plt.figure()
+# # plt.subplot(1,3,1)
+# plt.title('Resultado PIV - ' + modo)
+# plt.yticks( marcas/pixel_size/( vi/(2**(it-1)) ) , marcas)
+# plt.xticks( marcas/pixel_size/( vi/(2**(it-1)) ) , marcas)
+# plt.xlabel("Distancia [um]")
+# plt.ylabel("Distancia [um]")
+# plt.quiver(x,y,X,Y, scale = scale0)
 
 plt.figure()
-plt.title('Resultado NMT')
+plt.title('Resultado NMT - ' + modo)
 plt.yticks( marcas/pixel_size/( vi/(2**(it-1)) ) , marcas)
 plt.xticks( marcas/pixel_size/( vi/(2**(it-1)) ) , marcas)
 plt.xlabel("Distancia [um]")
@@ -295,13 +298,13 @@ plt.ylabel("Distancia [um]")
 plt.quiver(x,y,X_nmt,Y_nmt, scale = scale0)
 
 # plt.subplot(1,3,2)
-plt.figure()
-plt.title("Suavizado")
-plt.yticks( marcas/pixel_size/( vi/(2**(it-1)) ) , marcas)
-plt.xticks( marcas/pixel_size/( vi/(2**(it-1)) ) , marcas)
-plt.xlabel("Distancia [um]")
-plt.ylabel("Distancia [um]")
-plt.quiver(x,y,X_s,Y_s, scale = scale0)
+# plt.figure()
+# plt.title("Suavizado - " + modo)
+# plt.yticks( marcas/pixel_size/( vi/(2**(it-1)) ) , marcas)
+# plt.xticks( marcas/pixel_size/( vi/(2**(it-1)) ) , marcas)
+# plt.xlabel("Distancia [um]")
+# plt.ylabel("Distancia [um]")
+# plt.quiver(x,y,X_s,Y_s, scale = scale0)
 # plt.subplot(1,3,3)
 # plt.figure()
 # plt.title("Posiciones marcadas por el NMT (en blanco)")
