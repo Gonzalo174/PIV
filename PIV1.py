@@ -21,7 +21,7 @@ plt.rcParams['font.size'] = 16
 #%%
 
 # Specify the folder path
-folder_path = r'C:\Users\gonza\1\Tesis\PIV\23.06.22 - Celulas\E'  # Replace with the path to your folder
+folder_path = r'C:\Users\gonza\1\Tesis\PIV\23.06.23 - Celulas02\A'  # Replace with the path to your folder
 # folder_path = r'C:\Users\gonza\1\Tesis\2022\practica-PIV\gel8'
 
 # Get the list of file names in the folder
@@ -56,7 +56,7 @@ print(metadata_region["Archivo"].values)
 
 #%% Analize correlation
 
-n = 9
+n = 2
 pre1 = stack_pre[ n ]
 # post0 = centrar_referencia( stack_post[ n ] , pre1, 250)
 post0 = centrar_referencia_3D( stack_post, pre1, 250)
@@ -82,13 +82,13 @@ plt.imshow( np.flip( celula , 0 ) , cmap = 'gray' )
 
 # plt.imshow( np.flip( b , 0 ), cmap = "gray")
 #%%
-plt.figure()
-plt.title('Trans')
-plt.imshow( np.flip( celula , 0 ) , cmap = 'gray' )
+# plt.figure()
+# plt.title('Trans')
+# plt.imshow( np.flip( celula , 0 ) , cmap = 'gray' )
 
-plt.figure()
-plt.title('Trans redonda')
-plt.imshow( np.flip( celula_redonda[0] , 0 ) , cmap = 'gray' )
+# plt.figure()
+# plt.title('Trans redonda')
+# plt.imshow( np.flip( celula_redonda[0] , 0 ) , cmap = 'gray' )
 
 
 
@@ -101,7 +101,7 @@ exploration = 7 # px
 
 Noise_for_NMT = 0.2
 Threshold_for_NMT = 5
-modo = "Fit"
+modo = "Smooth5"
 mapas = False
 suave0 = 3
 
