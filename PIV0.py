@@ -18,7 +18,8 @@ plt.rcParams['figure.figsize'] = [9,9]
 plt.rcParams['font.size'] = 16
 
 #%% Import files and set metadata
-field = 105.6
+# field = 105.6
+field = 86
 resolution = 1600
 pixel_size = field/resolution
 
@@ -52,19 +53,33 @@ pixel_size = field/resolution
 # file_pre = "B1-R2-11-60X-pw20-k2-pre.oif"
 # file_post = "B1-R2-12-60X-pw20-k2-post.oif"
 
-file_cell = "B1-R3-06-60X-pw0.5-k0-tra.oif"
-file_pre = "B1-R3-07-60X-pw20-k2-pre.oif"
-file_post = "B1-R3-14-60X-pw20-k2-post.oif"
+# file_cell = "B1-R3-06-60X-pw0.5-k0-tra.oif"
+# file_pre = "B1-R3-07-60X-pw20-k2-pre.oif"
+# file_post = "B1-R3-14-60X-pw20-k2-post.oif"
+
+# Nuevas
+# file_cell = "00-trans1_pre.oif"
+# file_pre = "00-pre1.oif"
+# file_post = "09-post1.oif"
+
+# file_cell = "04-trans3_2largas_pre.oif"
+# file_pre = "05-2largas_pre3.oif"
+# file_post = "13-trans3_2largas_post.oif"
+
+file_cell = "06-trans4_1largavertical_pre.oif"
+file_pre = "07-1largavertical_pre.oif"
+file_post = "16-1largavertical_post.oif"
+
 
 stack_pre = of.imread( file_pre )[0]
 stack_post = of.imread( file_post )[0]
-celula = of.imread( file_cell )[1, 1]
-
-mascara1 = iio.imread( "celula_Crimson_R3_cell1.png" )
-mascara2 = iio.imread( "celula_Crimson_R3_cell2.png" )
-mascara3 = iio.imread( "celula_Crimson_R3_cell3.png" )
-mascara4 = iio.imread( "celula_Crimson_R3_cell4.png" )
-mascara5 = iio.imread( "celula_Crimson_R3_cell5.png" )
+# celula = of.imread( file_cell )[1, 1]
+celula = of.imread( file_cell )[1]
+# mascara1 = iio.imread( "celula_Crimson_R3_cell1.png" )
+# mascara2 = iio.imread( "celula_Crimson_R3_cell2.png" )
+# mascara3 = iio.imread( "celula_Crimson_R3_cell3.png" )
+# mascara4 = iio.imread( "celula_Crimson_R3_cell4.png" )
+# mascara5 = iio.imread( "celula_Crimson_R3_cell5.png" )
 
 #%% Analize correlation
 
@@ -96,16 +111,20 @@ plt.imshow( np.flip( celula , 0 ) , cmap = 'gray' )
 
 
 #%% Reconstruyo con PIV y filtro los datos con, Normalized Median Test (NMT)
-vi = 128
+vi = 100
 it = 3
 exploration = 7 # px
 
 Noise_for_NMT = 0.2
 Threshold_for_NMT = 5
+<<<<<<< HEAD
+modo = "Smooth"
+=======
 modo = "Fit"
 mapas = False
 suave0 = 3
 
+>>>>>>> refs/remotes/origin/main
 
 Y, X = n_iteraciones( post0, pre1, vi, it, bordes_extra = exploration, mode = modo)
 Y_nmt, X_nmt, res = nmt(Y, X, Noise_for_NMT, Threshold_for_NMT)
@@ -128,6 +147,17 @@ x,y = np.meshgrid( r_plot , r_plot )
 plt.figure()
 plt.title("Mapa de deformación - " + modo)
 
+<<<<<<< HEAD
+plt.imshow( celula , cmap = 'gray' , alpha = 0.4)
+# plt.imshow( 1-mascara1 , cmap = 'Greens', alpha = 0.2 )
+# plt.imshow( 1-mascara2 , cmap = 'Reds', alpha = 0.2 )
+# plt.imshow( 1-mascara3 , cmap = 'Blues', alpha = 0.2 )
+# plt.imshow( 1-mascara4 , cmap = 'Oranges', alpha = 0.2 )
+# plt.imshow( 1-mascara5 , cmap = 'Purples', alpha = 0.2 )
+
+plt.quiver(x,y,X_nmt,-Y_nmt, scale = scale0)
+# plt.quiver(x,y,X_s,-Y_s, scale = scale0)
+=======
 # plt.imshow( celula , cmap = 'gray' , alpha = 0.5)
 plt.imshow( 1-mascara2 , cmap = 'Reds', alpha = alfa, vmax = 0.1 )
 plt.imshow( 1-mascara3 , cmap = 'Blues', alpha = alfa, vmax = 0.1 )
@@ -139,6 +169,7 @@ if graficar == 0:
     plt.quiver(x,y,X_nmt,-Y_nmt, scale = scale0)
 elif graficar == 1:
     plt.quiver(x,y,X_s,-Y_s, scale = scale0)
+>>>>>>> refs/remotes/origin/main
 
 scale_length = 10  # Length of the scale bar in pixels
 scale_pixels = scale_length/pixel_size

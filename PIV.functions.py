@@ -36,6 +36,18 @@ def four_core(array2D):
     return big_array2D
 
 def round_pro(array2D):
+    """
+    Parameters
+    ----------
+    array2D : numpy.2darray
+        2 dimentional array.
+
+    Returns
+    -------
+    round_array2D : numpy.2darray
+        The same 2 dimentional array but each element is an intiger.
+
+    """
     round_array2D = array2D
     if type( array2D ) == np.ndarray:
         round_array2D = np.round( array2D )
@@ -99,7 +111,7 @@ def centrar_referencia(imagen_post, imagen_pre, bordes_extra, maximo = False):
     cross_corr_max = cross_corr[y0, x0]
     y, x = -(y0 - bordes_extra), -(x0 - bordes_extra)
     if maximo:
-        devolver = imagen_post_grande[ b-y:-b-y , b-x:-b-x ], cross_corr_max
+        devolver = imagen_post_grande[ b-y:-b-y , b-x:-b-x ], cross_corr_max, (y,x)
     else:
         devolver = imagen_post_grande[ b-y:-b-y , b-x:-b-x ]
     return devolver
@@ -109,7 +121,7 @@ def centrar_referencia_3D(stack_post, imagen_pre, bordes_extra):
     corr = []
     for z in range(len(stack_post)):
         imagen_post0 = stack_post[z]
-        imagen_post, cross_corr_max = centrar_referencia(imagen_post0, imagen_pre, bordes_extra, maximo = True)
+        imagen_post, cross_corr_max, (y,x) = centrar_referencia(imagen_post0, imagen_pre, bordes_extra, maximo = True)
         images_post.append( imagen_post )
         corr.append( cross_corr_max )
     print( np.argmax(corr) )
