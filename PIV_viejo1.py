@@ -44,8 +44,8 @@ print(metadata_region["Archivo"].values)
 
 n = 2
 pre1 = stack_pre[ n ]
-post0 = centrar_referencia( stack_post[ n-1 ] , pre1, 50)
-# post0 = centrar_referencia_3D( stack_post, pre1, 50)
+post0 = correct_driff( stack_post[ n-1 ] , pre1, 50)
+# post0 = correct_driff_3D( stack_post, pre1, 50)
 
 
 #%% Pre-Post-Trans Plot 

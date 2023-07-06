@@ -375,7 +375,7 @@ r_plot = np.arange(l)*wind + wind/2 + d
 x,y = np.meshgrid( r_plot , r_plot )
     
 
-#%% Desplacement at restriged areas
+#%% Desplacement at restricted areas
 
 cell_area = 1 - mascara1 
 cell_area_down = np.copy( cell_area )
