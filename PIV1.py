@@ -18,32 +18,11 @@ import os
 plt.rcParams['figure.figsize'] = [9,9]
 plt.rcParams['font.size'] = 16
 
-#%%
-
-# Specify the folder path
-<<<<<<< HEAD
-folder_path = r'C:\Users\gonza\1\Tesis\PIV\23.06.23 - Celulas02\A'  # Replace with the path to your folder
-=======
-folder_path = r'D:\Gonzalo\PIV\23.06.23 - Celulas02\A'  # Replace with the path to your folder
->>>>>>> refs/remotes/origin/main
-# folder_path = r'C:\Users\gonza\1\Tesis\2022\practica-PIV\gel8'
-
-# Get the list of file names in the folder
-file_names = os.listdir(folder_path)
-
-# Print the file names
-for file_name in file_names:
-    if file_name[-5:] != 'files':
-        print(file_name)
-
-#%%
-
-metadata = pd.read_csv('data.csv', delimiter = ',', usecols=np.arange(3,17,1))
-
 #%% Import files and set metadata
 
-region = 1
+muestra, region = "D", 1
 
+metadata = pd.read_csv('data'+muestra+'.csv', delimiter = ',', usecols=np.arange(3,17,1))
 metadata_region = metadata.loc[ metadata["Region"] == region ]
 
 
@@ -57,7 +36,9 @@ celula = of.imread( metadata_region.loc[ metadata_region["Tipo"] == 'trans pre' 
 celula_redonda = of.imread( metadata_region.loc[ metadata_region["Tipo"] == 'trans post' ]["Archivo"].values[0] )[1]
 
 print(metadata_region["Archivo"].values)
-plt.imsave("A"+str(region)+"_celulas.png", celula )
+
+
+# plt.imsave("A"+str(region)+"_celulas.png", celula )
 # mascara = iio.imread( 'D1.png' )
 #%% Analize correlation
 
@@ -91,18 +72,6 @@ plt.title('Trans')
 plt.imshow( celula_redonda, cmap = 'gray' )
 
 # plt.imshow( np.flip( b , 0 ), cmap = "gray")
-#%%
-# plt.figure()
-# plt.title('Trans')
-# plt.imshow( np.flip( celula , 0 ) , cmap = 'gray' )
-
-# plt.figure()
-# plt.title('Trans redonda')
-# plt.imshow( np.flip( celula_redonda[0] , 0 ) , cmap = 'gray' )
-
-
-
-
 
 #%% Reconstruyo con PIV y filtro los datos con, Normalized Median Test (NMT)
 vi = 128
@@ -138,7 +107,7 @@ plt.figure()
 plt.title("Mapa de deformación - " + modo)
 
 # plt.imshow( celula , cmap = 'gray' , alpha = 0.5)
-plt.imshow( 1-mascara , cmap = 'Reds', alpha = alfa, vmax = 0.1 )
+# plt.imshow( 1-mascara , cmap = 'Reds', alpha = alfa, vmax = 0.1 )
 # plt.imshow( 1-mascara2 , cmap = 'Reds', alpha = alfa, vmax = 0.1 )
 # plt.imshow( 1-mascara3 , cmap = 'Blues', alpha = alfa, vmax = 0.1 )
 # plt.imshow( 1-mascara4 , cmap = 'Oranges', alpha = alfa, vmax = 0.1 )
@@ -170,6 +139,18 @@ plt.xlim([d,image_length-d])
 plt.ylim([image_length-d,d])
 
 plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
 
 #%%
 r = np.sqrt(Y_s**2 + X_s**2)*pixel_size
@@ -344,7 +325,7 @@ r_plot = np.arange(l)*wind + wind/2 + d
 x,y = np.meshgrid( r_plot , r_plot )
     
 
-#%% Desplacement at restriged areas
+#%% Desplacement at restricted areas
 
 cell_area = 1 - mascara1 
 cell_area_down = np.copy( cell_area )
@@ -554,6 +535,17 @@ plt.show()
 
 
 
+# Specify the folder path
+folder_path = r'C:\Users\gonza\1\Tesis\PIV\23.06.23 - Celulas02\A'  # Replace with the path to your folder
+# folder_path = r'C:\Users\gonza\1\Tesis\2022\practica-PIV\gel8'
+
+# Get the list of file names in the folder
+file_names = os.listdir(folder_path)
+
+# Print the file names
+for file_name in file_names:
+    if file_name[-5:] != 'files':
+        print(file_name)
 
 
 
