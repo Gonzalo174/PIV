@@ -41,10 +41,10 @@ print(metadata_region["Archivo"].values)
 #%% Analize correlation
 n = 2
 pre = stack_pre[ n ]
-post, m, XY = correct_driff( stack_post[ n-1 ] , pre, 50, info = True)
+post, m, YX = correct_driff( stack_post[ n ] , pre, 50, info = True)
 # post = correct_driff_3D( stack_post, pre, 50)
 
-print(XY)
+print(YX)
 #%% Pre-Post-Trans Plot 
 
 plt.figure()
@@ -62,7 +62,7 @@ plt.imshow( celula, cmap = 'gray' )
 #%% Reconstruyo con PIV y filtro los datos con, Normalized Median Test (NMT)
 vi = 128
 it = 3
-bordes_extra = 7 # px
+bordes_extra = 10 # px
 
 Noise_for_NMT = 0.2
 Threshold_for_NMT = 5
@@ -70,33 +70,28 @@ modo = "Smooth3"
 mapas = False
 suave0 = 3
 
-Y, X = n_iterations( post, pre, vi, it, exploration = bordes_extra, mode = modo)
-Y_nmt, X_nmt, res = nmt(Y, X, Noise_for_NMT, Threshold_for_NMT)
+dominio, deformacion = n_iterations( post, pre, vi, it, exploration = bordes_extra, mode = modo)
+Y_nmt, X_nmt, res = nmt(*deformacion, Noise_for_NMT, Threshold_for_NMT)
 X_s, Y_s = smooth(X_nmt,suave0), smooth(Y_nmt, suave0)
 
+x, y = dominio
 #%% Plot
 
-graficar = 0 # 0:NMT - 1:Suave
-l = len(Y_nmt)
+graficar = 1 
+# 0:NMT - 1:Suave
 scale0 = 100
-wind = vi/( 2**(it-1) )
-field_length = int( l*wind )
-image_length = len( celula )
-d = (image_length - field_length)/2
-r_plot = np.arange(l)*wind + wind/2 + d
 alfa = 0.2
-
-x,y = np.meshgrid( r_plot , r_plot )
 
 plt.figure()
 plt.title("Mapa de deformación - " + modo)
 plt.imshow( 1-mascara , cmap = 'Reds', alpha = alfa, vmax = 0.1 )
 
 if graficar == 0:
-    plt.quiver(x,y,X_nmt,-Y_nmt, scale = scale0)
+    plt.quiver(x,y,X_nmt,-Y_nmt, np.sqrt( X_nmt**2 + Y_nmt**2 ), scale = scale0, cmap='gist_heat', pivot='tail')
 elif graficar == 1:
-    plt.quiver(x,y,X_s,-Y_s, scale = scale0)
-
+    plt.quiver(x,y,X_s,-Y_s, np.sqrt( X_s**2 + Y_s**2 ), scale = scale0, cmap='gist_heat', pivot='tail')
+    
+# plt.colorbar()    
 scale_length = 10  # Length of the scale bar in pixels
 scale_pixels = scale_length/pixel_size
 scale_unit = 'µm'  # Unit of the scale bar

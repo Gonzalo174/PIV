@@ -101,13 +101,16 @@ plt.plot( gauss_fit[:,-7] )
 
 
 #%% Nanospheres intensity histogram
-val_pre = pre1.flatten()
-val_post = post0.flatten()
+val_pre = pre.flatten()
+val_post = post.flatten()
 
 plt.figure()
-plt.hist(val_pre, bins = np.arange(4000))
+plt.hist(val_pre, bins = np.arange(1000))
 plt.title('pre')
+plt.ylim([0,21000])
 
 plt.figure()
-plt.hist(val_post, bins = np.arange(4000))
+plt.hist(val_post, bins = np.arange(1000))
 plt.title('post')
+plt.ylim([0,21000])
+

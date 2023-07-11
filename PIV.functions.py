@@ -276,7 +276,7 @@ def gaussian_2d_plot(xy, amplitude, xo, yo, sigma_x, sigma_y, theta, offset):
     return g
 
 
-def iteration( img_post, img_pre, win_shape, exploration = 10, translation_Y = "None", translation_X = "None", max_exploration = 0, mode = "Default"):
+def iteration( img_post, img_pre, win_shape, exploration = 10, translation_Y = "None", translation_X = "None", edge = 0, mode = "Default"):
     """
     Parameters
     ----------
@@ -292,8 +292,8 @@ def iteration( img_post, img_pre, win_shape, exploration = 10, translation_Y = "
         Deformation map obtenied in a previous iteration using a windows of twice side leght. The default is "None".
     translation_X : numpy.2darray like, optional
         Deformation map obtenied in a previous iteration using a windows of twice side leght. The default is "None".
-    max_exploration : int, optional
-        Maximum exploration. The default is 0.
+    edge : int, optional
+        Maximum exploration, to prevent going outside post image. The default is 0.
     mode : str, optional
         Mode using to calculate maximum correlation. The default is "Default".
 
@@ -306,18 +306,18 @@ def iteration( img_post, img_pre, win_shape, exploration = 10, translation_Y = "
     img_shape = img_pre.shape[0]
     
     # aca debe calcularse en base a la 1ra ventana y despues se duplica, si no pueden sumarse ventanas extra
-    if max_exploration == 0:
-        max_exploration = ( img_shape - win_shape*(img_shape//win_shape) )//2
-        if max_exploration == 0:
-            max_exploration = win_shape//2
+    if edge == 0:
+        edge = ( img_shape - win_shape*(img_shape//win_shape) )//2
+        if edge == 0:
+            edge = win_shape//2
             
-    divis = int( (img_shape - 2*max_exploration)/win_shape  )
+    divis = int( (img_shape - 2*edge)/win_shape  )
 
     Y = np.zeros([divis,divis])
     X = np.zeros([divis,divis])
 
-    if exploration >= max_exploration:
-        exploration = max_exploration
+    if exploration >= edge:
+        exploration = edge
     
     if type( translation_Y ) == str:
         translation_Y = np.zeros([divis,divis])
@@ -330,15 +330,15 @@ def iteration( img_post, img_pre, win_shape, exploration = 10, translation_Y = "
     for j in range(divis):
         for i in range(divis):
 
-            Ay_pre = (j)*win_shape    +  max_exploration  + int(translation_Y[j,i])
-            By_pre = (j+1)*win_shape  +  max_exploration  + int(translation_Y[j,i])
-            Ax_pre = (i)*win_shape    +  max_exploration  + int(translation_X[j,i])
-            Bx_pre = (i+1)*win_shape  +  max_exploration  + int(translation_X[j,i])
+            Ay_pre = (j)*win_shape    +  edge  + int(translation_Y[j,i])
+            By_pre = (j+1)*win_shape  +  edge  + int(translation_Y[j,i])
+            Ax_pre = (i)*win_shape    +  edge  + int(translation_X[j,i])
+            Bx_pre = (i+1)*win_shape  +  edge  + int(translation_X[j,i])
 
-            Ay_post = (j)*(win_shape)   +  max_exploration - exploration
-            By_post = (j+1)*(win_shape) +  max_exploration + exploration
-            Ax_post = (i)*(win_shape)   +  max_exploration - exploration
-            Bx_post = (i+1)*(win_shape) +  max_exploration + exploration
+            Ay_post = (j)*(win_shape)   +  edge - exploration
+            By_post = (j+1)*(win_shape) +  edge + exploration
+            Ax_post = (i)*(win_shape)   +  edge - exploration
+            Bx_post = (i+1)*(win_shape) +  edge + exploration
             
             pre_win = img_pre[ Ay_pre : By_pre, Ax_pre : Bx_pre ]
             post_bigwin = img_post[ Ay_post : By_post, Ax_post : Bx_post ]
@@ -436,12 +436,6 @@ def n_iterations( img_post, img_pre, win_shape_0, iterations = 3, exploration = 
     """
     n = iterations   
     
-    img_shape = img_pre.shape[0]
-    
-    limite = ( img_shape - win_shape_0*(img_shape//win_shape_0) )//2
-    if limite == 0:
-        limite = win_shape_0//2    
-    
     limite = int( (img_post.shape[0] - win_shape_0*(img_post.shape[0]//win_shape_0) )//2 )
     if limite == 0:
         limite = win_shape_0//2
@@ -455,9 +449,12 @@ def n_iterations( img_post, img_pre, win_shape_0, iterations = 3, exploration = 
         print( n0, ventana )
         Y, X = iteration( img_post, img_pre, ventana, exploration, four_core(Y), four_core(X), limite, mode_array[n0] )
 
-    deformation_map = Y, X          
+    deformation_map = Y, X     
 
-    return deformation_map
+    domain0 = np.arange(Y.shape[0])*ventana + ventana/2 + limite
+    domain = np.meshgrid( domain0 , domain0 )
+    
+    return domain, deformation_map
 
 def nmt(Y_, X_, noise, threshold, mode = "Mean"):
     """
