@@ -20,7 +20,7 @@ plt.rcParams['font.size'] = 16
 
 #%% Import files and set metadata
 
-muestra, region = "D", 1
+muestra, region = "D", 2
 
 metadata = pd.read_csv('data'+muestra+'.csv', delimiter = ',', usecols=np.arange(3,17,1))
 metadata_region = metadata.loc[ metadata["Region"] == region ]
@@ -39,10 +39,10 @@ mascara = iio.imread( "mascara" + muestra + str(region) + ".png" )
 print(metadata_region["Archivo"].values)
 
 #%% Analize correlation
-n = 2
+n = 0
 pre = stack_pre[ n ]
-post, m, XY = correct_driff( stack_post[ n-1 ] , pre, 50, info = True)
-# post = correct_driff_3D( stack_post, pre, 50)
+# post, m, XY = correct_driff( stack_post[ n-1 ] , pre, 50, info = True)
+post = correct_driff_3D( stack_post, pre, 50)
 
 print(XY)
 #%% Pre-Post-Trans Plot 
@@ -70,11 +70,11 @@ modo = "Smooth3"
 mapas = False
 suave0 = 3
 
-Y, X = n_iterations( post, pre, vi, it, exploration = bordes_extra, mode = modo)
-Y_nmt, X_nmt, res = nmt(Y, X, Noise_for_NMT, Threshold_for_NMT)
+dominio, deformacion = n_iterations( post, pre, vi, it, exploration = bordes_extra, mode = modo)
+Y_nmt, X_nmt, res = nmt(*deformacion, Noise_for_NMT, Threshold_for_NMT)
 X_s, Y_s = smooth(X_nmt,suave0), smooth(Y_nmt, suave0)
 
-
+x, y = dominio
 #%%
 r = np.sqrt(Y_s**2 + X_s**2)*pixel_size
 r_mean = np.mean( r.flatten()*pixel_size )
@@ -99,7 +99,8 @@ ps = pixel_size
 il = len(cell_area)
 ks = 40
 th = 0.9
-print( ks*(0.5 - th)*ps )
+l = len(Y_work)
+# print( ks*(0.5 - th)*ps )
 
 N = 10
 x_a = np.zeros([N*2-1])
@@ -148,7 +149,7 @@ for n in range(N):
     a[-n+N-2] = cell_area_down
     
 r_a = np.sqrt( x_a**2 + y_a**2 )
-d_ra = np.sqrt(  (x_a**2)*( r_a )**3  +  (y_a**2)*( r_a )**3   )
+d_ra = np.sqrt(  (x_a**2)/( r_a )*dx_a  +  (y_a**2)/( r_a )*dx_a   )
 
 # iio.imwrite("a.tiff",a)
 
