@@ -20,7 +20,7 @@ plt.rcParams['font.size'] = 16
 
 #%% Import files and set metadata
 
-muestra, region = "D", 1
+muestra, region = "D", 2
 
 metadata = pd.read_csv('data'+muestra+'.csv', delimiter = ',', usecols=np.arange(3,17,1))
 metadata_region = metadata.loc[ metadata["Region"] == region ]
@@ -39,10 +39,10 @@ mascara = iio.imread( "mascara" + muestra + str(region) + ".png" )
 print(metadata_region["Archivo"].values)
 
 #%% Analize correlation
-n = 2
+n = 0
 pre = stack_pre[ n ]
-post, m, YX = correct_driff( stack_post[ n ] , pre, 50, info = True)
-# post = correct_driff_3D( stack_post, pre, 50)
+# post, m, YX = correct_driff( stack_post[ n ] , pre, 50, info = True)
+post = correct_driff_3D( stack_post, pre, 50)
 
 print(YX)
 #%% Pre-Post-Trans Plot 
@@ -87,19 +87,21 @@ plt.title("Mapa de deformación - " + modo)
 plt.imshow( 1-mascara , cmap = 'Reds', alpha = alfa, vmax = 0.1 )
 
 if graficar == 0:
-    plt.quiver(x,y,X_nmt,-Y_nmt, np.sqrt( X_nmt**2 + Y_nmt**2 ), scale = scale0, cmap='gist_heat', pivot='tail')
+    plt.quiver(x,y,X_nmt,-Y_nmt, np.sqrt( X_nmt**2 + Y_nmt**2 ), scale = scale0, cmap = 'gist_heat', pivot='tail')
 elif graficar == 1:
-    plt.quiver(x,y,X_s,-Y_s, np.sqrt( X_s**2 + Y_s**2 ), scale = scale0, cmap='gist_heat', pivot='tail')
+    plt.quiver(x,y,X_s,-Y_s, np.sqrt( X_s**2 + Y_s**2 ), scale = scale0, cmap = 'gist_heat', pivot='tail')
     
 # plt.colorbar()    
 scale_length = 10  # Length of the scale bar in pixels
 scale_pixels = scale_length/pixel_size
 scale_unit = 'µm'  # Unit of the scale bar
+wind = vi/( 2**(it-1) )
+d = int( ( resolution - len(Y_nmt)*wind )/2   )
 
 # Add the scale bar
 scale_bar_length = int(scale_pixels / plt.rcParams['figure.dpi'])  # Convert scale length to figure units
 start_x = d + wind  # Starting x-coordinate of the scale bar
-start_y = image_length -( d + wind )# Starting y-coordinate of the scale bar
+start_y = resolution -( d + wind )# Starting y-coordinate of the scale bar
 
 plt.plot([start_x+20, start_x + scale_pixels-20], [start_y-25, start_y-25], color='white', linewidth = 40)
 for i in range(20):
@@ -108,8 +110,8 @@ plt.text(start_x + scale_pixels/2, start_y-25, f'{scale_length} {scale_unit}', c
 
 plt.xticks([])
 plt.yticks([])
-plt.xlim([d,image_length-d])
-plt.ylim([image_length-d,d])
+plt.xlim([d,resolution-d])
+plt.ylim([resolution-d,d])
 
 plt.show()
 
