@@ -91,7 +91,7 @@ plt.imshow( celula )
 
 #%%
 # iio.imwrite('celula_Crimson_R1.jpg', celula )
-plt.imsave('celula_Orange_R3.png', celula )
+plt.imsave('MCF10 celula.png', celula )
 
 #%%
 bg = suavizar(celula, 100)

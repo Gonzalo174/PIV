@@ -11,9 +11,10 @@ Created on Tue Jul  4 10:36:04 2023
 # a, b = 1.5,4.5
 a, b = 10, 5
 w = 32
+a2 = np.mean(pre)/np.mean(post)
 
-pre1_chico = pre1[ int(w*a) : int(w*(a+1)), int(w*b) : int(w*(b+1)) ]
-post0_chico = post0[int(w*a) : int(w*(a+1)), int(w*b) : int(w*(b+1))] 
+pre1_chico = pre[ int(w*a) : int(w*(a+1)), int(w*b) : int(w*(b+1)) ]
+post0_chico = post[int(w*a) : int(w*(a+1)), int(w*b) : int(w*(b+1))]*a2 
 
 
 plt.figure()
@@ -24,6 +25,10 @@ plt.imshow( pre1_chico , cmap = 'gray', vmin = 80, vmax = 700)
 plt.figure()
 plt.title('Post')
 plt.imshow( post0_chico , cmap = 'gray', vmin = 80, vmax = 700)
+
+
+
+
 
 # plt.figure()
 # plt.title('Post')
@@ -105,12 +110,106 @@ val_pre = pre.flatten()
 val_post = post.flatten()
 
 plt.figure()
-plt.hist(val_pre, bins = np.arange(1000))
+plt.hist( (val_pre), bins = np.arange(80,700,2), density = True)
 plt.title('pre')
-plt.ylim([0,21000])
+plt.ylim([0,0.02])
 
 plt.figure()
-plt.hist(val_post, bins = np.arange(1000))
+plt.hist(val_post, bins = np.arange(80, 700, 2), density = True)
 plt.title('post')
-plt.ylim([0,21000])
+plt.ylim([0,0.02])
+
+#%%
+
+a, b = 12, 5
+w = 16
+a2 = np.mean(pre)/np.mean(post)
+
+pre1_chico = pre[ int(w*a) : int(w*(a+1)), int(w*b) : int(w*(b+1)) ]
+post0_chico = post[int(w*a) : int(w*(a+1)), int(w*b) : int(w*(b+1))]*a2 
+
+
+plt.figure()
+plt.subplot(1,2,1)
+plt.title('Pre')
+plt.imshow( pre1_chico , cmap = 'gray', vmin = 80, vmax = 700)
+
+plt.subplot(1,2,2)
+plt.title('Post')
+plt.imshow( post0_chico , cmap = 'gray', vmin = 80, vmax = 700)
+
+
+val_pre = pre.flatten()
+val_pre_chico = pre1_chico.flatten()
+
+plt.figure()
+plt.hist( (val_pre), bins = np.arange(80,700,2), density = True)
+plt.hist( (val_pre_chico), bins = np.arange(80,700,20), density = True)
+
+plt.title('pre')
+plt.ylim([0,0.02])
+
+
+
+#%%
+
+inf = 120
+a = np.mean(post)/np.mean(pre)
+
+pre_plot = np.copy( (pre+5)*a - inf )
+post_plot = np.copy(post - inf )
+
+pre_plot[ pre < 0 ] = 0
+pre_plot[ post < 0 ] = 0
+
+c0 = [(0, 0, 0), (0, 0, 0)]
+cm0 = ListedColormap(c0)
+
+c1 = []
+c2 = []
+for i in range(1000):
+    c1.append((i/999,0,0))
+    c2.append((0,i/999,0))
+
+cm1 = ListedColormap(c1)
+cm2 = ListedColormap(c2)
+
+
+plt.figure()
+plt.imshow( np.zeros(pre.shape), cmap = cm0 )
+plt.imshow( pre_plot, cmap = cm1, vmin = 0, vmax = 250, alpha = 1)
+plt.imshow( post_plot, cmap = cm2, vmin = 0, vmax = 250, alpha = 0.5)
+
+
+#%%
+
+from matplotlib.colors import ListedColormap
+colors = [(0, 0, 0),  # Black
+          (1, 0, 0),  # Red
+          (1, 1, 0),  # Yellow
+          (0, 1, 0),  # Green
+          (0, 0, 1)]  # Blue
+
+
+#%%
+prueba = np.ones([2,2])
+
+prueba[:,0] = [0,0]
+
+plt.imshow(prueba, cmap = cm1, alpha = 1)
+plt.imshow(prueba.T, cmap = cm2, alpha = 0.5)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

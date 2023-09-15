@@ -204,6 +204,55 @@ def correct_driff(img_post, img_pre, exploration, info = False):
     return devolver
 
 
+def unrotate(img_post, img_pre, exploration_px, exploration_angle = 1, N_angle = 100, info = False):
+    """
+    Parameters
+    ----------
+    img_post : numpy.2darray like
+        2 dimentional array - image of the nanospheres after removing the cells.
+    img_pre : numpy.2darray like
+        2 dimentional array - image of the nanospheres with the cells adhered on the hydrogel.
+    exploration_px : int
+        Number of pixels explored over the plane
+    exploration_angle : float
+        Set the limits for angle exploration     
+    N_angle : int
+        Number of angles explored  
+    info : bool, optional
+        If it is true also returns the value of the maximum correlation and its coordinates. The default is False.
+
+    Returns
+    -------
+    devolver : numpy.2darray
+        post image driff and rotation corrected.
+
+    """
+    l = img_pre.shape[0]
+    b = exploration_px
+    angles = np.linspace(-exploration_angle, exploration_angle, N_angle)
+    cc = []
+    for ang in angles:
+        big_img_post = np.ones([l+2*b, l+2*b])*np.mean( img_post.flatten() )
+        big_img_post[ b:-b , b:-b ] = img_post
+        # print( len(big_img_post) )
+        img_post_rot = ndimage.rotate( big_img_post, ang, reshape = False )
+        # print( len(img_post_rot) )
+        cross_corr = smooth( signal.correlate(img_post_rot - img_post_rot.mean(), img_pre - img_pre.mean(), mode = 'valid', method="fft"), 3 ) 
+        cc.append( np.max(cross_corr) )
+
+    img_post_rot = ndimage.rotate(big_img_post, angles[np.array(cc).argmax()], reshape = False  )
+    cross_corr = smooth( signal.correlate(img_post_rot - img_post_rot.mean(), img_pre - img_pre.mean(), mode = 'valid', method="fft"), 3 ) 
+    y0, x0 = np.unravel_index(cross_corr.argmax(), cross_corr.shape)
+        
+    y, x = -(y0 - b), -(x0 - b)
+    
+    if info:
+        devolver = img_post_rot[ b-y:-b-y , b-x:-b-x ], np.array(cc).argmax(), (y,x,angles[np.array(cc).argmax()]) 
+    else:
+        devolver = img_post_rot[ b-y:-b-y , b-x:-b-x ]
+    return devolver
+
+
 def correct_driff_3D(stack_post, img_pre, exploration, info = False):
     """
     Parameters
@@ -324,7 +373,9 @@ def iteration( img_post, img_pre, win_shape, exploration = 10, translation_Y = "
     if type( translation_X ) == str:
         translation_X = np.zeros([divis,divis])
         
+    # cc_area = signal.correlate(img_post[-100:,-100:] - img_post[-100:,-100:].mean(), img_pre[-100:,-100:] - img_pre[-100:,-100:].mean(), mode = 'valid', method="fft")/(100**2)
     cc_area = signal.correlate(img_post - img_post.mean(), img_pre - img_pre.mean(), mode = 'valid', method="fft")/(img_shape**2)
+
     factor = 0.3
 
     for j in range(divis):
