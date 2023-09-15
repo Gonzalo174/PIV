@@ -9,6 +9,7 @@ Created on Thu Sep 14 17:38:50 2023
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
+import seaborn as sns
 import pandas as pd
 import imageio.v3 as iio
 from scipy import ndimage   # Para rotar imagenes
@@ -180,6 +181,8 @@ plt.show()
 #%%
 
 n_pre = [6,5,4,8,5,4,4]
+ccolors = ["Blues", "Oranges", "Greens", "Reds", "Purples", "Greys", "Reds"]
+
 
 defo = []
 Ddefo = []
@@ -212,6 +215,7 @@ for region in range(1,8,1):
     # modo = "No control"
     
     modo = "Smooth3"
+    # modo = "Fit"
     if region == 7:
         modo = "No control"
     
@@ -225,9 +229,66 @@ for region in range(1,8,1):
     R_s = np.sqrt( X_s**2 + Y_s**2 )
     x, y = dominio
     
-    defo.append( np.mean( R_s ) )
-    Ddefo.append( np.std( R_s ) )
     
+    c0 = [(0, 0, 0), (0, 0, 0)]
+    cm0 = ListedColormap(c0)
+
+    c1 = []
+    c2 = []
+    for i in range(1000):
+        c1.append((i/999,0,0))
+        c2.append((0,i/999,0))
+
+    cm1 = ListedColormap(c1)
+    cm2 = ListedColormap(c2)
+
+    scale0 = 100
+    scale_length = 10  # Length of the scale bar in pixels
+    scale_pixels = scale_length/pixel_size
+    scale_unit = 'µm'  # Unit of the scale bar
+
+    wind = vi/( 2**(it-1) )
+    d = int( ( resolution - len(Y_nmt)*wind )/2   )
+
+    # Add the scale bar
+    scale_bar_length = int(scale_pixels / plt.rcParams['figure.dpi'])  # Convert scale length to figure units
+    start_x = d + 0  # Starting x-coordinate of the scale bar
+    start_y = resolution -( 2*wind )# Starting y-coordinate of the scale bar
+
+    
+    plt.figure()
+    
+    al = 0.5
+    if region == 7:
+        al = 0.3
+    
+    plt.imshow(np.zeros(pre.shape), cmap = ListedColormap([(1,1,1)]))
+    plt.imshow( mascara, cmap = ccolors[region-1], alpha = al )
+    plt.quiver(x,y,X_s,-Y_s, scale = scale0, pivot='tail')
+
+    # plt.plot([start_x+20, start_x + scale_pixels-20], [start_y-25, start_y-25], color='white', linewidth = 40)
+    for i in range(20):
+        plt.plot([start_x, start_x + scale_pixels], [start_y + i - 10, start_y + i - 10], color='black', linewidth = 1)
+
+    plt.xticks([])
+    plt.yticks([])
+    plt.xlim([0,resolution])
+    plt.ylim([resolution,0])
+    
+    
+    print(field)
+    # defo.append( np.mean( R_s ) )
+    # Ddefo.append( np.std( R_s ) )
+    defo.append( R_s*pixel_size )
+#%%
+plt.grid(True)
+sns.violinplot(data=defo, x=None, y=None, bw='scott', cut=2, scale='area', scale_hue=True, gridsize=500, width=0.8, inner='box', split=False, dodge=True, orient=None, linewidth=None, color=None, palette=None, saturation=0.75, ax=None)
+plt.ylabel("Deformación [um]")
+plt.xlabel("Célula")
+plt.xticks([0,1,2,3,4,5,6],[1,2,3,4,5,6,7])
+
+
+
 #%%
 
 plt.errorbar( np.arange(1,8,1), defo, Ddefo, fmt = 'o'  )
