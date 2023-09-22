@@ -22,7 +22,7 @@ plt.rcParams['figure.figsize'] = [10,10]
 plt.rcParams['font.size'] = 16
 
 #%%
-region = 3
+region = 1
 metadata = pd.read_csv('Data.csv', delimiter = ',', usecols=np.arange(3,15,1))
 otradata = pd.read_csv('Data.csv', delimiter = ',', usecols=np.arange(0,2,1), index_col=0, header=0, names = ['1','2'])
 metadata_region = metadata.loc[ metadata["Región"] == region ]
@@ -37,11 +37,11 @@ field = metadata_region["Campo"].values[0]
 resolution = metadata_region["Tamano imagen"].values[0]
 pixel_size = field/resolution
 
-pre = stack_pre[ 4 ]
+pre = stack_pre[ 5 ]
 post, ZYX = correct_driff_3D( stack_post, pre, 50, info = True)
 
 print(metadata_region["Archivo"].values)
-print(n_pre, n_post  )
+# print(n_pre, n_post  )
 print(ZYX)
 
 a = np.mean(post)/np.mean(pre)
@@ -64,7 +64,7 @@ plt.imshow( celula_post , cmap = 'gray' )
 
 # %% PIV + NMT + Suavizado
 
-vi = 128
+vi = 200
 it = 3
 bordes_extra = 10 # px
 
@@ -81,7 +81,20 @@ Y_nmt, X_nmt, res = nmt(*deformacion, Noise_for_NMT, Threshold_for_NMT)
 X_s, Y_s = smooth(X_nmt,suave0), smooth(Y_nmt, suave0)
 R_s = np.sqrt( X_s**2 + Y_s**2 )
 x, y = dominio
-    
+
+#%%
+
+plt.imshow(np.sqrt(X_s**2 + Y_s**2))
+# plt.imshow( mascara, cmap = "Oranges", alpha = 0.3 )
+plt.title(str(vi))    
+#%%
+
+plt.imshow(np.zeros(pre.shape), cmap = ListedColormap([(1,1,1)]))
+plt.imshow( mascara, cmap = "Oranges", alpha = 0.9 )
+plt.quiver(x,y,X_s,-Y_s, scale = 100, pivot='tail')
+plt.xlim([0, resolution])
+plt.ylim([resolution,0])
+
 #%%
 
 plt.hist( R_s.flatten()*pixel_size, bins = np.arange(-0.15, 11.15, 0.3)*pixel_size )
@@ -294,12 +307,82 @@ plt.xticks([0,1,2,3,4,5,6],[1,2,3,4,5,6,7])
 plt.errorbar( np.arange(1,8,1), defo, Ddefo, fmt = 'o'  )
 plt.grid( True )
 
+#%%
+
+dr = 1 # um
+ps = pixel_size
+dr_px = dr/ps
 
 
 
+th = 0.1
+ks = int(np.round( dr_px/th/0.4 ))
+
+#%%
+m1 = np.zeros([1024]*2)
+m1[:,500:700] = 1
+
+m2 = area_upper(m1, kernel_size = ks, threshold = th)
+msuma = m2+m1
+plt.imshow(msuma)
+
+#%%
+
+plt.plot( np.diff(msuma[510]) )
+msuma_diff = np.diff(msuma[510])
+#%%
+puntos_subida = []
+puntos_bajada = []
+for i in range( len(msuma_diff) ):
+    if msuma_diff[i] > 0.5:
+        puntos_subida.append( i )
+    if msuma_diff[i] < -0.5:
+        puntos_bajada.append( i )
+
+print(np.diff(puntos_subida))
+print(np.diff(puntos_bajada))
+
+#%%
+ker_list = []
+incremento = []
+
+for i in range(9, 51, 2):
+    m1 = np.zeros([1024]*2)
+    m1[:,500:700] = 1
+
+    m2 = area_upper(m1, kernel_size = i, threshold = 0.1)
+    msuma = m2+m1
+    msuma_diff = np.diff(msuma[512])
+
+    puntos_subida = []
+    puntos_bajada = []
+    for j in range( len(msuma_diff) ):
+        if msuma_diff[j] > 0.5:
+            puntos_subida.append( j )
+        if msuma_diff[j] < -0.5:
+            puntos_bajada.append( j )
+
+    print(i)
+    ker_list.append(i)
+    incremento.append(np.diff(puntos_subida)[0])
 
 
+#%%
 
+plt.plot(ker_list, incremento, 'o')
+
+m = np.mean(np.diff(np.array(incremento).flatten())/2)
+print(m)
+#%%
+
+def recta(x, m, b):
+    return m*x + b
+
+popt, pcov = curve_fit(recta, ker_list, np.array(incremento).flatten())
+print(popt, np.sqrt(np.diag(pcov)))
+
+
+#%%
 
 
 

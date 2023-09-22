@@ -325,7 +325,7 @@ def gaussian_2d_plot(xy, amplitude, xo, yo, sigma_x, sigma_y, theta, offset):
     return g
 
 
-def iteration( img_post, img_pre, win_shape, exploration = 10, translation_Y = "None", translation_X = "None", edge = 0, mode = "Default"):
+def iteration( img_post0, img_pre0, win_shape, exploration = 10, translation_Y = "None", translation_X = "None", edge = 100, mode = "Default"):
     """
     Parameters
     ----------
@@ -342,7 +342,7 @@ def iteration( img_post, img_pre, win_shape, exploration = 10, translation_Y = "
     translation_X : numpy.2darray like, optional
         Deformation map obtenied in a previous iteration using a windows of twice side leght. The default is "None".
     edge : int, optional
-        Maximum exploration, to prevent going outside post image. The default is 0.
+        Extra border, to prevent going outside post image. The default is 0.
     mode : str, optional
         Mode using to calculate maximum correlation. The default is "Default".
 
@@ -352,21 +352,30 @@ def iteration( img_post, img_pre, win_shape, exploration = 10, translation_Y = "
         Arrays containing the resulting deformation in Y and X, that is the sum of the previous deformation maps and the calculated position of the cross correlation maximums. 
 
     """
-    img_shape = img_pre.shape[0]
+    img_shape = img_pre0.shape[0]
+    img_pre, img_post = np.ones([img_shape+2*edge,img_shape+2*edge])*np.mean(img_pre0), np.ones([img_shape+2*edge,img_shape+2*edge])*np.mean(img_post0)
+    img_pre[edge:-edge,edge:-edge], img_post[edge:-edge,edge:-edge] = img_pre0, img_post0    
+
+    remain = win_shape - img_shape%win_shape
+    if remain == win_shape:
+        remain = 0
     
-    # aca debe calcularse en base a la 1ra ventana y despues se duplica, si no pueden sumarse ventanas extra
-    if edge == 0:
-        edge = ( img_shape - win_shape*(img_shape//win_shape) )//2
-        if edge == 0:
-            edge = win_shape//2
-            
-    divis = int( (img_shape - 2*edge)/win_shape  )
+    
+    if type( translation_Y ) != str:
+        divis = len(translation_Y)
+        edge -= (divis*win_shape - img_shape)//2
+    elif img_shape%win_shape != 0:  # aca se mete la 1ra si la imagen no encaja con el tamano de ventana
+        divis = int( ( img_shape + remain )/win_shape )
+        edge -= remain//2 
+    else:  # aca se mete la primera si encaja con el tamano de ventana
+        divis = int( ( img_shape + remain )/win_shape )
+        
+    # print("divis = ", divis)
+    # print("edge = ", edge)
+    # print("remain = ", remain)
 
     Y = np.zeros([divis,divis])
     X = np.zeros([divis,divis])
-
-    if exploration >= edge:
-        exploration = edge
     
     if type( translation_Y ) == str:
         translation_Y = np.zeros([divis,divis])
@@ -487,10 +496,6 @@ def n_iterations( img_post, img_pre, win_shape_0, iterations = 3, exploration = 
     """
     n = iterations   
     
-    limite = int( (img_post.shape[0] - win_shape_0*(img_post.shape[0]//win_shape_0) )//2 )
-    if limite == 0:
-        limite = win_shape_0//2
-
     X = "None" #np.zeros([tam0//2, tam0//2])
     Y = "None" #np.zeros([tam0//2, tam0//2])
 
@@ -498,12 +503,13 @@ def n_iterations( img_post, img_pre, win_shape_0, iterations = 3, exploration = 
     for n0 in range(n):
         ventana =  win_shape_0//(2**n0)
         print( n0, ventana )
-        Y, X = iteration( img_post, img_pre, ventana, exploration, four_core(Y), four_core(X), limite, mode_array[n0] )
+        Y, X = iteration( img_post, img_pre, ventana, exploration, four_core(Y), four_core(X), mode = mode_array[n0] )
 
     deformation_map = Y, X     
 
-    domain0 = np.arange(Y.shape[0])*ventana + ventana/2 + limite
-    domain = np.meshgrid( domain0 , domain0 )
+    domain0 = np.arange(Y.shape[0])*ventana + ventana/2
+    delta = (len(img_post) - domain0[0] - domain0[-1])/2
+    domain = np.meshgrid( domain0 + delta, domain0 + delta )
     
     return domain, deformation_map
 
