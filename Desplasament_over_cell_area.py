@@ -246,3 +246,148 @@ plt.plot(r_plot, r_a, ".")
 plt.grid(True)
 plt.xlabel("dr [µm]")
 plt.ylabel("Deformación resultante [µm]")
+
+
+#%%
+
+#%% 21/9
+
+dr = 10 # um
+ps = pixel_size
+dr_px = dr/ps
+print(dr_px)
+
+th = 0.1
+ks = int(np.round( dr_px/0.4 ))
+print(ks)
+
+#%%
+
+m0 = np.copy(mascara)
+ms = np.copy(mascara)
+for j in range(dr):
+    m0 = area_upper(m0, kernel_size = ks//dr, threshold = th)
+    ms = ms + m0
+    # plt.imshow(msuma)
+#%%
+
+plt.imshow( ms )
+
+#%%
+corte = ( ms[510, 620:770] )
+plt.plot( corte )
+
+#%%
+
+corte_diff = np.diff(corte)
+plt.plot( corte_diff )
+
+#%%
+puntos = []
+
+for i in range( len(corte_diff) ):
+    if corte_diff[i] < -0.5:
+        puntos.append( i )
+
+print( np.mean( np.diff(puntos)*ps ) )
+
+
+#%%
+
+#%%
+ker_list = []
+incremento = []
+
+for i in range(9, 51, 2):
+    m1 = np.zeros([1024]*2)
+    m1[:,500:700] = 1
+
+    m2 = area_upper(m1, kernel_size = int(i/0.4), threshold = 0.1)
+    msuma = m2+m1
+    msuma_diff = np.diff(msuma[512])
+
+    puntos_subida = []
+    puntos_bajada = []
+    for j in range( len(msuma_diff) ):
+        if msuma_diff[j] > 0.5:
+            puntos_subida.append( j )
+        if msuma_diff[j] < -0.5:
+            puntos_bajada.append( j )
+
+    print(i)
+    ker_list.append(i)
+    incremento.append( ( np.diff(puntos_subida)[0] + np.diff(puntos_bajada)[0])/2  )
+
+
+#%%
+
+plt.plot(np.array(ker_list), incremento, 'o')
+plt.xlabel("Tamaño del kernel [um]")
+plt.ylabel("Incremento [um]")
+plt.grid(True)
+
+m = np.mean(np.diff(np.array(incremento).flatten())/np.diff(np.array(ker_list) )  )
+print(m)
+#%%
+
+def recta(x, m, b):
+    return m*x + b
+
+popt, pcov = curve_fit(recta, ker_list, np.array(incremento).flatten())
+print(popt, np.sqrt(np.diag(pcov)))
+
+
+#%% 22/9
+
+Y_work, X_work = Y_s, X_s
+l = len(Y_work)
+
+dr = 30 # um
+ps = pixel_size
+ks = int(np.round( dr/ps/0.4 ))
+
+m0 = np.copy(mascara)
+ms = np.copy(mascara)
+defo = []
+
+for j in range(0,dr,2):
+    print(j)
+    m0 = area_upper(m0, kernel_size = ks//dr, threshold = 0.1)
+    ms = ms + m0
+    
+    Y_cell = []
+    X_cell = []
+
+    for j in range(l):
+        for i in range(l):
+            if  0 < int(x[j,i]) < 1024 and 0 < int(y[j,i]) < 1024 and int(m0[ int(x[j,i]), int(y[j,i]) ]) == 1:
+                Y_cell.append(Y_work[j,i])
+                X_cell.append(X_work[j,i])
+
+    # defo.append( np.sum( np.sqrt( np.array(Y_cell)**2 + np.array(X_cell)**2 ) ) )
+    defo.append( np.sqrt( np.array(Y_cell)**2 + np.array(X_cell)**2 ) )
+                
+#%% 
+   
+plt.grid(True)
+sns.violinplot(data=defo, x=None, y=None, bw='scott', cut=2, scale='area', scale_hue=True, gridsize=500, width=0.8, inner='box', split=False, dodge=True, orient=None, linewidth=None, color=None, palette=None, saturation=0.75, ax=None)
+plt.ylabel("Deformación [um]")
+plt.xlabel("Incremeto [um]")
+plt.xticks(np.arange(dr//2),np.arange(dr//2)*2)
+
+
+#%%
+plt.figure()                
+plt.plot(defo)
+
+plt.figure()
+plt.imshow( ms )
+
+plt.figure()
+plt.imshow(np.zeros(pre.shape), cmap = ListedColormap([(1,1,1)]))
+plt.imshow( mascara, cmap = "Oranges", alpha = 0.4 )
+plt.imshow( m0, cmap = "Oranges", alpha = 0.4 )
+plt.quiver(x,y,X_s,-Y_s, scale = 100, pivot='tail')
+plt.xlim([0, resolution])
+plt.ylim([resolution,0])
+
