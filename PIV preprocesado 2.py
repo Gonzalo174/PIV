@@ -20,6 +20,19 @@ import os
 plt.rcParams['figure.figsize'] = [10,10]
 plt.rcParams['font.size'] = 16
 
+c0 = [(0, 0, 0), (0, 0, 0)]
+cm0 = ListedColormap(c0)
+c3 = [(1, 1, 1), (1, 1, 0)]
+cm3 = ListedColormap(c3)
+
+c1 = []
+c2 = []
+for i in range(1000):
+    c1.append( (i/999,0,0) )
+    c2.append( (0,i/999,0) )
+
+cm1 = ListedColormap(c1)
+cm2 = ListedColormap(c2)
 
 #%% Import
 
@@ -27,13 +40,14 @@ CS =      [ (11,2), (11,3), (11,4),  (10,1), (10,2), (10,5), (9,1), (1,1) ]
 pre_CS =  [      6,      4,      4,       4,      8,      4,     3,     9 ]
 post_CS = [      5,      3,      4,       3,      4,      4,     3,    11 ]
 
-SS =      [ (8,2), (8,3), (7,1), (7,2), (6,2), (6,3), (6,4), (5,4), (4,1), (3,3) ]
-pre_SS =  [     4,     4,     6,     5,     6,     5,     4,     3,     7,     6 ]
-post_SS = [     4  ,   4,     4,     4,     5,     4,     5,     4,     8,     6 ]
+SS =      [ (8,2), (8,3), (7,1), (7,2), (6,2), (6,3), (6,4), (5,4), (3,3) ]
+pre_SS =  [     4,     4,     6,     5,     6,     5,     4,     3,     6 ]
+post_SS = [     4  ,   4,     4,     4,     5,     4,     5,     4,     6 ]
 
 Cualitativas = [ (8,1), (8,5), (7,2), (6,1), (5,3), (5,5), (3,5) ]
 
-path = r"C:\Users\gonza\1\Tesis\2023\\"
+# path = r"C:\Users\gonza\1\Tesis\2023\\"
+path = r"D:\Gonzalo\\"
 carpetas = ["23.08.17 - gon MCF7 1", "23.08.18 - gon MCF7 2", "23.08.18 - gon MCF7 3", "23.08.24 - gon MCF7 4", "23.08.24 - gon MCF7 5", "23.08.25 - gon MCF7 6", "23.08.25 - gon MCF7 7", "23.08.31 - gon MCF7 8 - B30", "23.08.31 - gon MCF7 9 - A30", "23.09.01 - gon MCF7 10 - C30", "23.09.01 - gon MCF7 11 - D30"]
 muestras = [ "C16", "B16", "A16", "A23", "B23", "D23", "C23", "B30", "A30", "C30", "D30" ]
 
@@ -132,7 +146,10 @@ for tup in CS:
 
 #%% Control de los planos sobre los que se realiza PIV
 
-for i, tup in enumerate(CS):
+for i, tup in enumerate(SS):
+    name =  muestras[tup[0]-1] + 'R' + str(tup[1])
+    print(name)
+
     full_path = path + carpetas[int(tup[0]-1)] + '\Data.csv'
     region = int( tup[1]  )
     metadata = pd.read_csv( full_path, delimiter = ',', usecols=np.arange(3,15,1))
@@ -144,13 +161,17 @@ for i, tup in enumerate(CS):
 
     stack_pre = of.imread( path + carpetas[int(tup[0]-1)] + r"\\" + metadata_region.loc[ metadata_region["Tipo"] == 'PRE' ]["Archivo"].values[0]+".oif" )[0]
     stack_post = of.imread( path + carpetas[int(tup[0])-1] + r"\\" + metadata_region.loc[ metadata_region["Tipo"] == 'POST' ]["Archivo"].values[0]+".oif" )[0]
-    mascara = 1- iio.imread(r"C:\Users\gonza\1\Tesis\PIV\Mascaras\\" + str( muestras[tup[0]-1] ) + "R" + str(tup[1]) + ".png")
+    mascara = 1- iio.imread(path + r"PIV\Mascaras\\" + str( muestras[tup[0]-1] ) + "R" + str(tup[1]) + "_SS.png")
 
-    pre = stack_pre[ pre_CS[i] ]
-    post0 = stack_post[ post_CS[i] ]
+    pre = stack_pre[ pre_SS[i] ]
+    post0 = stack_post[ post_SS[i] ]
     post, m, YX = correct_driff( post0 , pre, 50, info = True)
+    if i == 2 or i == 8:
+        post = unrotate(post0, pre, 50, exploration_angle = 1, N_angle = 100, info = False)
+    if i == 1:
+        post, m, YX = correct_driff( post0 , pre, 250, info = True)       
     
-    vi = 100
+    vi = 128
     it = 3
     bordes_extra = 10 # px
 
@@ -239,14 +260,11 @@ for i, tup in enumerate(CS):
     plt.show()
 
  
-    print(name)
+#%% Guardar las distribuciones de defromacion CS
 
-
-#%% Guardar las distribuciones de defromacion
-
-defo0  = []
-defo10 = []
-defo20 = []
+defo0_CS  = []
+defo10_CS = []
+defo20_CS = []
 
 for i, tup in enumerate(CS):
     full_path = path + carpetas[int(tup[0]-1)] + '\Data.csv'
@@ -259,25 +277,34 @@ for i, tup in enumerate(CS):
     pixel_size = field/resolution
 
     stack_pre = of.imread( path + carpetas[int(tup[0]-1)] + r"\\" + metadata_region.loc[ metadata_region["Tipo"] == 'PRE' ]["Archivo"].values[0]+".oif" )[0]
-    stack_post = of.imread( path + carpetas[int(tup[0])-1] + r"\\" + metadata_region.loc[ metadata_region["Tipo"] == 'POST' ]["Archivo"].values[0]+".oif" )[0]
-    mascara   = 1- iio.imread(r"C:\Users\gonza\1\Tesis\PIV\Mascaras\\" + str( muestras[tup[0]-1] ) + "R" + str(tup[1]) + ".png")
-    mascara10 = 1- iio.imread(r"C:\Users\gonza\1\Tesis\PIV\Mascaras\\" + str( muestras[tup[0]-1] ) + "R" + str(tup[1]) + "_10um.png")[:,:,0]/255
-    mascara20 = 1- iio.imread(r"C:\Users\gonza\1\Tesis\PIV\Mascaras\\" + str( muestras[tup[0]-1] ) + "R" + str(tup[1]) + "_20um.png")[:,:,0]/255
+    q = 0
+    if i == 7:
+        q = 1
+    stack_post = of.imread( path + carpetas[int(tup[0])-1] + r"\\" + metadata_region.loc[ metadata_region["Tipo"] == 'POST' ]["Archivo"].values[q]+".oif" )[0]
+    mascara   = 1- iio.imread(path + r"PIV\Mascaras\\" + str( muestras[tup[0]-1] ) + "R" + str(tup[1]) + ".png")
+    mascara10 = 1- iio.imread(path + r"PIV\Mascaras\\" + str( muestras[tup[0]-1] ) + "R" + str(tup[1]) + "_10um.png")[:,:,0]/255
+    mascara20 = 1- iio.imread(path + r"PIV\Mascaras\\" + str( muestras[tup[0]-1] ) + "R" + str(tup[1]) + "_20um.png")[:,:,0]/255
     nom = str( muestras[tup[0]-1] ) + "R" + str(tup[1])
     print(nom)
     pre = stack_pre[ pre_CS[i] ]
     post0 = stack_post[ post_CS[i] ]
     post, m, YX = correct_driff( post0 , pre, 50, info = True)
     
-    vi = 100
+    # if i == 2 or i == 8:
+    #     post = unrotate(post0, pre, 50, exploration_angle = 1, N_angle = 100, info = False)
+    # if i == 1:
+    #     post, m, YX = correct_driff( post0 , pre, 250, info = True)       
+    
+    vi = 128
     it = 3
     bordes_extra = 10 # px
-
+    
     Noise_for_NMT = 0.2
     Threshold_for_NMT = 5
     modo = "Smooth3"
     suave0 = 3
-
+    scale0 = 100
+    
     dominio, deformacion = n_iterations( post, pre, vi, it, exploration = bordes_extra, mode = modo)
     Y_nmt, X_nmt, res = nmt(*deformacion, Noise_for_NMT, Threshold_for_NMT)
     X_s, Y_s = smooth(X_nmt,suave0), smooth(Y_nmt, suave0)
@@ -285,7 +312,93 @@ for i, tup in enumerate(CS):
     x, y = dominio
 
     plt.figure()
-    plt.title(nom)
+    plt.title(nom + " " + str(i))
+    plt.imshow(np.zeros(pre.shape), cmap = ListedColormap([(1,1,1)]))
+    plt.imshow( mascara, cmap = "Reds", alpha = 0.5 )
+    plt.imshow( mascara10, cmap = "Reds", alpha = 0.5 )
+    plt.imshow( mascara20, cmap = "Reds", alpha = 0.5 )
+    plt.quiver(x,y,X_s,-Y_s, scale = scale0, pivot='tail')
+
+    plt.xticks([])
+    plt.yticks([])
+    plt.xlim([0,resolution])
+    plt.ylim([resolution,0])
+    
+    
+    Y_work, X_work = np.copy( Y_s ), np.copy( X_s )
+    l = len(Y_work)
+    
+    Y_cell  , X_cell   = [], []
+    Y_cell10, X_cell10 = [], []
+    Y_cell20, X_cell20 = [], []
+
+    for j in range(l):
+        for i in range(l):
+            if 0 < x[j,i] < 1023 and 0 < y[j,i] < 1023 and mascara[ int(x[j,i]), int(y[j,i]) ] == 1:
+                # print(x[j,i])
+                Y_cell.append(Y_work[j,i])
+                X_cell.append(X_work[j,i])
+            if 0 < x[j,i] < 1023 and 0 < y[j,i] < 1023 and mascara10[ int(x[j,i]), int(y[j,i]) ] == 1:
+                Y_cell10.append(Y_work[j,i])
+                X_cell10.append(X_work[j,i])
+            if 0 < x[j,i] < 1023 and 0 < y[j,i] < 1023 and mascara20[ int(x[j,i]), int(y[j,i]) ] == 1:
+                Y_cell20.append(Y_work[j,i])
+                X_cell20.append(X_work[j,i])
+            
+    defo0_CS.append(  np.sqrt( np.array(Y_cell)**2 + np.array(X_cell)**2 )*pixel_size )
+    defo10_CS.append(  np.sqrt( np.array(Y_cell10)**2 + np.array(X_cell10)**2 )*pixel_size )
+    defo20_CS.append(  np.sqrt( np.array(Y_cell20)**2 + np.array(X_cell20)**2 )*pixel_size )
+
+#%% Guardar las distribuciones de defromacion
+
+defo0  = []
+defo10 = []
+defo20 = []
+
+for i, tup in enumerate(SS):
+    full_path = path + carpetas[int(tup[0]-1)] + '\Data.csv'
+    region = int( tup[1]  )
+    metadata = pd.read_csv( full_path, delimiter = ',', usecols=np.arange(3,15,1))
+    metadata_region = metadata.loc[ metadata["Región"] == region ]
+
+    field = metadata_region["Campo"].values[0]
+    resolution = metadata_region["Tamano imagen"].values[0]
+    pixel_size = field/resolution
+
+    stack_pre = of.imread( path + carpetas[int(tup[0]-1)] + r"\\" + metadata_region.loc[ metadata_region["Tipo"] == 'PRE' ]["Archivo"].values[0]+".oif" )[0]
+    stack_post = of.imread( path + carpetas[int(tup[0])-1] + r"\\" + metadata_region.loc[ metadata_region["Tipo"] == 'POST' ]["Archivo"].values[0]+".oif" )[0]
+    mascara   = 1- iio.imread(path + r"PIV\Mascaras\\" + str( muestras[tup[0]-1] ) + "R" + str(tup[1]) + "_SS.png")
+    mascara10 = 1- iio.imread(path + r"PIV\Mascaras\\" + str( muestras[tup[0]-1] ) + "R" + str(tup[1]) + "_10um_SS.png")[:,:,0]/255
+    mascara20 = 1- iio.imread(path + r"PIV\Mascaras\\" + str( muestras[tup[0]-1] ) + "R" + str(tup[1]) + "_20um_SS.png")[:,:,0]/255
+    nom = str( muestras[tup[0]-1] ) + "R" + str(tup[1])
+    print(nom)
+    pre = stack_pre[ pre_SS[i] ]
+    post0 = stack_post[ post_SS[i] ]
+    post, m, YX = correct_driff( post0 , pre, 50, info = True)
+    
+    # if i == 2 or i == 8:
+    #     post = unrotate(post0, pre, 50, exploration_angle = 1, N_angle = 100, info = False)
+    # if i == 1:
+    #     post, m, YX = correct_driff( post0 , pre, 250, info = True)       
+    
+    vi = 128
+    it = 3
+    bordes_extra = 10 # px
+    
+    Noise_for_NMT = 0.2
+    Threshold_for_NMT = 5
+    modo = "Smooth3"
+    suave0 = 3
+    scale0 = 100
+    
+    dominio, deformacion = n_iterations( post, pre, vi, it, exploration = bordes_extra, mode = modo)
+    Y_nmt, X_nmt, res = nmt(*deformacion, Noise_for_NMT, Threshold_for_NMT)
+    X_s, Y_s = smooth(X_nmt,suave0), smooth(Y_nmt, suave0)
+    R_s = np.sqrt( X_s**2 + Y_s**2 )
+    x, y = dominio
+
+    plt.figure()
+    plt.title(nom + " " + str(i))
     plt.imshow(np.zeros(pre.shape), cmap = ListedColormap([(1,1,1)]))
     plt.imshow( mascara, cmap = cm3, alpha = 0.5 )
     plt.imshow( mascara10, cmap = cm3, alpha = 0.5 )
@@ -325,28 +438,23 @@ for i, tup in enumerate(CS):
 #%%
 
 plt.grid(True)
-plt.title('20 um')
-sns.violinplot(data=defo20, x=None, y=None, bw='scott', cut=0, scale='area', scale_hue=True, gridsize=500, width=0.8, inner='box', split=False, dodge=True, orient=None, linewidth=None, color=None, palette=None, saturation=0.75, ax=None)
+# plt.title('20 um')
+sns.violinplot(data=defo10, x=None, y=None, bw='scott', cut=0, scale="count", scale_hue=True, gridsize=500, width=0.8, inner='box', split=False, dodge=True, orient=None, linewidth=None, color=None, palette=None, saturation=0.75, ax=None)
 plt.ylabel("Deformación [um]")
 plt.xlabel("Célula")
-plt.xticks([0,1,2,3,4,5,6,7],[1,2,3,4,5,6,7,8])
-
-
-
-
+# plt.xticks([0,1,2,3,4,5,6,7],[1,2,3,4,5,6,7,8])
+plt.ylim(-0.15,1.15)
 
 #%%
 
-c0 = [(0, 0, 0), (0, 0, 0)]
-cm0 = ListedColormap(c0)
-c3 = [(1, 1, 1), (1, 1, 0)]
-cm3 = ListedColormap(c3)
+plt.grid(True)
+plt.title('0 um')
+sns.violinplot(data=defo0_CS, x=None, y=None, bw='scott', cut=0, scale='area', scale_hue=True, gridsize=500, width=0.8, inner='box', split=False, dodge=True, orient=None, linewidth=None, color=None, palette=None, saturation=0.75, ax=None)
+plt.ylabel("Deformación [um]")
+plt.xlabel("Célula")
+# plt.xticks([0,1,2,3,4,5,6,7],[1,2,3,4,5,6,7,8])
+plt.ylim(-0.15,1.15)
 
-c1 = []
-c2 = []
-for i in range(1000):
-    c1.append( (i/999,0,0) )
-    c2.append( (0,i/999,0) )
 
-cm1 = ListedColormap(c1)
-cm2 = ListedColormap(c2)
+
+
