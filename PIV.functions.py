@@ -302,8 +302,6 @@ def curve_fit_pro(f, xdata, ydata, p0=None, sigma=None, absolute_sigma=False, ch
         
     return popt, pcov
 
-
-
 def gaussian_2d(xy, amplitude, xo, yo, sigma_x, sigma_y, theta, offset):
     x, y = xy
     xo = float(xo)

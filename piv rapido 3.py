@@ -22,15 +22,17 @@ plt.rcParams['font.size'] = 16
 
 
 #%% Import
-path = r"C:\Users\gonza\1\Tesis\2023\\"
-# path = r"D:\Gonzalo\\"
+# path = r"C:\Users\gonza\1\Tesis\2023\\"
+path = r"D:\Gonzalo\\"
 carpetas = ["23.10.05 - gon MCF10 1 - A04", "23.10.05 - gon MCF10 2 - D04", "23.10.05 - gon MCF10 3 - E04", "23.10.06 - gon MCF10 4 - C04" ]
 # muestras = [ "C16", "B16", "A16", "A23", "B23", "D23", "C23", "B30", "A30", "C30", "D30" ]
 
 #%% D04_R6
-n, r = 1, 5
-full_path1 = path + carpetas[n-1]
-name = carpetas[n-1][-3:] + "_R" + str(int(r))
+r = 19
+distribucion = [ 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 4, 4, 4, 4, 4, 4  ]
+full_path1 = path + carpetas[distribucion[r]-1]
+
+name = carpetas[distribucion[r]-1][-3:] + "_R" + str(int(r))
 
 metadata = pd.read_csv( full_path1 + "\Data.csv", delimiter = ',', usecols=np.arange(3,15,1))
 metadata_region = metadata.loc[ metadata["Región"] == r ]
@@ -53,6 +55,9 @@ stack_post = of.imread( full_path1 + r"\\" + metadata_region.loc[ metadata_regio
 
 #%%
 
+def normalizar(array):
+    return (array - min(array))/max(array - min(array))
+
 err_pre = []
 err_post = []
 
@@ -63,21 +68,41 @@ for i in range(len(stack_post)):
 for i in range(len(stack_pre)):
     err_pre.append( np.std( stack_pre[i] )   )
     
-plt.plot( err_pre, label = "PRE" )
-plt.plot( err_post, label = "POST" )
+plt.plot( normalizar(err_pre), label = "PRE" )
+plt.plot( normalizar(err_post), label = "POST" )
 plt.grid(True)
 plt.legend()
 plt.title(name)
 
 '''
-           1 
-pre10 =  [  ]
-post10 = [  ]
+           1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 
+pre10 =  [ 8, 4, 5, 7, 4, 4, 4, 4, 4, 4, 5, 4, 5, 2, 4, 4, 4, 4, 4 ]
+post10 = [ 8, 4, 6, 6, 2, 5, 3, 3, 4, 2, 5, 4, 4, 4, 4, 5, 5, 4, 4 ]
+comentarios:
+    1: saturacion en planos superiores
+    2: sin defo y achicharrada
+    3: sin defo pero con spreading aparente
+    4: saturación en planos superiores
+    5: lindalinda
+    6: deforma una banda
+    7: lindalinda
+    8: lindalinda
+    9: lindalinda
+    10: distinto zoom en la adquisición
+    11: linda - migrante?
+    12: lindalinda - otra cerca
+    13: lindalinda - otra cerca
+    14: lindalinda
+    15: linda - otra cerca
+    16: gel dañado - deforman más células periféricas
+    17: saturación en planos superiores necesita corrección
+    18: linda - otra célula muy cerca
+    19: dos células cerca
 
 '''
 #%%
 
-n0, dn0 = 4, -2
+n0, dn0 = 4, 0
 pre = stack_pre[ n0 ]
 post = correct_driff( stack_post[ n0 + dn0 ], pre, 50 )
 # post, YX = correct_driff_3D( stack_post[n0-2:] , pre, 50, info = True)
@@ -85,11 +110,11 @@ post = correct_driff( stack_post[ n0 + dn0 ], pre, 50 )
 a = np.mean(post)/np.mean(pre)
 
 plt.figure()
-plt.title('Pre')
+plt.title('Pre' + str(n0))
 plt.imshow( pre, cmap = 'gray', vmin = 80, vmax = 700)
 
 plt.figure()
-plt.title('Post')
+plt.title('Post' + str(n0 + dn0))
 plt.imshow( post, cmap = 'gray', vmin = 80*a, vmax = 700*a  )
 
 #%%
@@ -105,11 +130,15 @@ modo = "Smooth3"
 mapas = False
 suave0 = 3
 
+# pre[950:,900:] = np.mean( pre[:950,:900] )
+# post[950:,900:] = np.mean( post[:950,:900] )
+
 dominio, deformacion = n_iterations( post, pre, vi, it, exploration = bordes_extra, mode = modo)
 Y_nmt, X_nmt, res = nmt(*deformacion, Noise_for_NMT, Threshold_for_NMT)
 X_s, Y_s = smooth(X_nmt,suave0), smooth(Y_nmt, suave0)
 R_s = np.sqrt( X_s**2 + Y_s**2 )
 x, y = dominio
+
 
 plt.figure()
 R_s = np.sqrt( Y_s**2 + X_s**2 )*pixel_size
