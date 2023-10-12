@@ -16,49 +16,28 @@ from scipy import signal    # Para aplicar filtros
 import oiffile as of
 import os
 
+#%%
+plt.rcParams['figure.figsize'] = [9,9]
+plt.rcParams['font.size'] = 16
+
 
 #%% Import
-
-# path = r"C:\Users\gonza\1\Tesis\2023\\"
-path = r"D:\Gonzalo\\"
+path = r"C:\Users\gonza\1\Tesis\2023\\"
+# path = r"D:\Gonzalo\\"
 carpetas = ["23.10.05 - gon MCF10 1 - A04", "23.10.05 - gon MCF10 2 - D04", "23.10.05 - gon MCF10 3 - E04", "23.10.06 - gon MCF10 4 - C04" ]
 # muestras = [ "C16", "B16", "A16", "A23", "B23", "D23", "C23", "B30", "A30", "C30", "D30" ]
 
-# D:\Gonzalo\23.10.06 - gon MCF10 4 - C04
-#%% Guardar las imagenes de las celulas para hacer las mascaras
-
-for car in carpetas:
-    full_path = path + car
-    metadata = pd.read_csv( full_path + "\Data.csv", delimiter = ',', usecols=np.arange(3,15,1))
-    regiones = np.unique( metadata["Región"].values )[:-1]
-    print(regiones)
-    for region in regiones:
-        metadata_region = metadata.loc[ metadata["Región"] == region ]
-        celula = of.imread( full_path + r"\\" + metadata_region.loc[ metadata_region["Tipo"] == 'PRE' ]["Archivo"].values[0]+".oif" )[1,0]
-        # print( celula.shape )
-    
-        name = car[-3:] + "_R" + str(int(region)) + ".png"
-        
-        plt.figure()
-        plt.title( name[:-4] )
-        plt.imshow(celula, cmap = "gray")
-        
-        plt.imsave( name, celula, cmap = "gray" )
-    
-    
-    # print(regiones[:-1])
-
 #%% D04_R6
-
-full_path1 = path + carpetas[0]
-r = 3
+n, r = 1, 5
+full_path1 = path + carpetas[n-1]
+name = carpetas[n-1][-3:] + "_R" + str(int(r))
 
 metadata = pd.read_csv( full_path1 + "\Data.csv", delimiter = ',', usecols=np.arange(3,15,1))
 metadata_region = metadata.loc[ metadata["Región"] == r ]
 
 celula = of.imread( full_path1 + r"\\" + metadata_region.loc[ metadata_region["Tipo"] == 'PRE' ]["Archivo"].values[0]+".oif" )[1,0]
 plt.figure()
-plt.title( name[:-4] )
+plt.title( name )
 plt.imshow(celula, cmap = "gray")
 
 
@@ -70,11 +49,38 @@ pixel_size = field/resolution
 stack_pre = of.imread( full_path1 + r"\\" + metadata_region.loc[ metadata_region["Tipo"] == 'PRE' ]["Archivo"].values[0]+".oif" )[0]
 stack_post = of.imread( full_path1 + r"\\" + metadata_region.loc[ metadata_region["Tipo"] == 'POST' ]["Archivo"].values[0]+".oif" )[0]
 # mascara = 1- iio.imread(path + r"PIV\Mascaras\\" + str( muestras[tup[0]-1] ) + "R" + str(tup[1]) + ".png")
-mascara = mascara3
+# mascara = mascara3
 
-n = 9
-pre = stack_pre[ n ]#pre_CS[i] ]
-post, YX = correct_driff_3D( stack_post[n-2:] , pre, 50, info = True)
+#%%
+
+err_pre = []
+err_post = []
+
+
+for i in range(len(stack_post)):
+    err_post.append( np.std( stack_post[i] ) )
+    
+for i in range(len(stack_pre)):
+    err_pre.append( np.std( stack_pre[i] )   )
+    
+plt.plot( err_pre, label = "PRE" )
+plt.plot( err_post, label = "POST" )
+plt.grid(True)
+plt.legend()
+plt.title(name)
+
+'''
+           1 
+pre10 =  [  ]
+post10 = [  ]
+
+'''
+#%%
+
+n0, dn0 = 4, -2
+pre = stack_pre[ n0 ]
+post = correct_driff( stack_post[ n0 + dn0 ], pre, 50 )
+# post, YX = correct_driff_3D( stack_post[n0-2:] , pre, 50, info = True)
    
 a = np.mean(post)/np.mean(pre)
 
@@ -87,7 +93,6 @@ plt.title('Post')
 plt.imshow( post, cmap = 'gray', vmin = 80*a, vmax = 700*a  )
 
 #%%
-
 vi = 128
 it = 3
 bordes_extra = 10 # px
@@ -106,14 +111,12 @@ X_s, Y_s = smooth(X_nmt,suave0), smooth(Y_nmt, suave0)
 R_s = np.sqrt( X_s**2 + Y_s**2 )
 x, y = dominio
 
-
-R_s = np.sqrt( Y_s**2 + X_s**2 )*ps
+plt.figure()
+R_s = np.sqrt( Y_s**2 + X_s**2 )*pixel_size
 plt.imshow( R_s )
 plt.colorbar()
 plt.xticks([])
 plt.yticks([])
-
-#%%
 
 inf = 120
 a = np.mean(post)/np.mean(pre)
@@ -329,9 +332,40 @@ for j in range(1024-4):
 
 #%%
 
+for car in carpetas:
+    full_path = path + car
+    metadata = pd.read_csv( full_path + "\Data.csv", delimiter = ',', usecols=np.arange(3,15,1))
+    regiones = np.unique( metadata["Región"].values )[:-1]
+    print(regiones)
+    for region in regiones:
+        metadata_region = metadata.loc[ metadata["Región"] == region ]
+        celula = of.imread( full_path + r"\\" + metadata_region.loc[ metadata_region["Tipo"] == 'PRE' ]["Archivo"].values[0]+".oif" )[1,0]
 
 
 
+
+#%% Guardar las imagenes de las celulas para hacer las mascaras
+
+for car in carpetas:
+    full_path = path + car
+    metadata = pd.read_csv( full_path + "\Data.csv", delimiter = ',', usecols=np.arange(3,15,1))
+    regiones = np.unique( metadata["Región"].values )[:-1]
+    print(regiones)
+    for region in regiones:
+        metadata_region = metadata.loc[ metadata["Región"] == region ]
+        celula = of.imread( full_path + r"\\" + metadata_region.loc[ metadata_region["Tipo"] == 'PRE' ]["Archivo"].values[0]+".oif" )[1,0]
+        # print( celula.shape )
+    
+        name = car[-3:] + "_R" + str(int(region)) + ".tiff"
+        
+        plt.figure()
+        plt.title( name[:-5] )
+        plt.imshow(celula, cmap = "gray")
+        
+        # plt.imsave( name, celula, cmap = "gray" )
+        iio.imwrite(name, celula)
+    
+    # print(regiones[:-1])
 
 
 
