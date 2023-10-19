@@ -20,15 +20,14 @@ import os
 plt.rcParams['figure.figsize'] = [9,9]
 plt.rcParams['font.size'] = 16
 
-
 #%% Import
-# path = r"C:\Users\gonza\1\Tesis\2023\\"
-path = r"D:\Gonzalo\\"
+path = r"C:\Users\gonza\1\Tesis\2023\\"
+# path = r"D:\Gonzalo\\"
 carpetas = ["23.10.05 - gon MCF10 1 - A04", "23.10.05 - gon MCF10 2 - D04", "23.10.05 - gon MCF10 3 - E04", "23.10.06 - gon MCF10 4 - C04" ]
 # muestras = [ "C16", "B16", "A16", "A23", "B23", "D23", "C23", "B30", "A30", "C30", "D30" ]
 
 #%% D04_R6
-r = 19
+r = 1
 distribucion = [ 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 4, 4, 4, 4, 4, 4  ]
 full_path1 = path + carpetas[distribucion[r]-1]
 

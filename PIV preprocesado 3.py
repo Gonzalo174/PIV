@@ -24,8 +24,8 @@ plt.rcParams['font.size'] = 16
 distribucion = [ 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 4, 4, 4, 4, 4, 4  ]
 pre10 =  [ 8, 4, 5, 7, 4, 4, 4, 4, 4, 4, 5, 4, 5, 2, 4, 4, 4, 4, 4 ]
 post10 = [ 8, 4, 6, 6, 2, 5, 3, 3, 4, 2, 5, 4, 4, 4, 4, 5, 5, 4, 4 ]
-
-r = 1 
+#          1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19
+r = 9
 full_path1 = path + carpetas[distribucion[r]-1]
 
 name = carpetas[distribucion[r]-1][-3:] + "_R" + str(int(r))
@@ -51,22 +51,29 @@ post = correct_driff( stack_post[ post10[r-1] ], pre, 50 )
 
 vi = 128
 it = 3
-bordes_extra = 10 # px
+bordes_extra = 5 # px
 
 Noise_for_NMT = 0.2
 Threshold_for_NMT = 5
-modo = "Smooth3"
-# modo = "No control"
+# modo = "Smooth3"
+modo = "No control"
 mapas = False
 suave0 = 3
 
-dominio, deformacion = n_iterations( post, pre, vi, it, exploration = bordes_extra, mode = modo)
+dominio, deformacion = n_iterations( post, pre, vi, it, exploration = bordes_extra, mode = modo )
 Y_nmt, X_nmt, res = nmt(*deformacion, Noise_for_NMT, Threshold_for_NMT)
 X_s, Y_s = smooth(X_nmt,suave0), smooth(Y_nmt, suave0)
 # mascara = 1 - iio.imread( "mascara_3.png" )
 
 x, y = dominio
 
+plt.quiver(x,y,X_nmt,-Y_nmt, scale = scale0, pivot='tail')
+# plt.quiver(x,y,X_s,-Y_s, scale = scale0, pivot='tail')
+plt.xticks([])
+plt.yticks([])
+plt.xlim([0,resolution])
+plt.ylim([resolution,0])
+#%%
 
 inf = 120
 a = np.mean(post)/np.mean(pre)
@@ -163,7 +170,7 @@ plt.show()
 # archivo1 = np.concatenate( (c_pre_a,c_post_a), axis = 1 )
 # archivo2 = np.concatenate( (pre_a,post_a) , axis = 1 )
 
-archivo0 = np.concatenate( (archivo1,archivo2), axis = 0 )
+# archivo0 = np.concatenate( (archivo1,archivo2), axis = 0 )
 
 #%%
 

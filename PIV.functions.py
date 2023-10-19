@@ -380,7 +380,6 @@ def iteration( img_post0, img_pre0, win_shape, exploration = 10, translation_Y =
     if type( translation_X ) == str:
         translation_X = np.zeros([divis,divis])
         
-    # cc_area = signal.correlate(img_post[-100:,-100:] - img_post[-100:,-100:].mean(), img_pre[-100:,-100:] - img_pre[-100:,-100:].mean(), mode = 'valid', method="fft")/(100**2)
     cc_area = signal.correlate(img_post - img_post.mean(), img_pre - img_pre.mean(), mode = 'valid', method="fft")/(img_shape**2)
 
     factor = 0.3

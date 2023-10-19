@@ -200,12 +200,13 @@ plt.imshow(prueba.T, cmap = cm2, alpha = 0.5)
 
 #%% 12/10
 
-val_1 = np.copy(pre[512:].flatten())
-val_2 = np.copy(pre[:512].flatten())
+val_1 = np.copy(pre1[512:].flatten())
+val_2 = np.copy(pre1[:512].flatten())
 
 plt.figure()
 plt.hist( val_2, bins = np.arange(2050)*2, density = False, label = "2")
 plt.hist( val_1, bins = np.arange(2050)*2, density = False, label = "1")
+# plt.xlim([0,2000])
 plt.yscale("log")
 plt.legend()
 plt.grid(True)
@@ -218,7 +219,9 @@ um = 800
 res = np.zeros( pre.shape )
 res[ pre > um ] = 1
 pre1 = np.copy( pre )
-pre1[ pre > um ] = np.mean( pre*(1-res)*(1024**2)/(1024**2 - np.sum(res)) )
+for i in range(3):
+    res = area_upper(res, 10)
+pre1[ res == 1 ] = np.mean( pre*(1-res)*(1024**2)/(1024**2 - np.sum(res)) )
 
 plt.imshow(pre1)
 
@@ -234,6 +237,64 @@ post1[ post > um ] = np.mean( post*(1-res)*(1024**2)/(1024**2 - np.sum(res)) )
 plt.imshow(post1)
 
 
+
+#%% 13/10
+
+plt.figure()
+plt.title('Pre')
+plt.imshow( pre , cmap = 'gray', vmin = 80, vmax = 700)
+
+plt.figure()
+plt.title('Post')
+plt.imshow( post, cmap = 'gray', vmin = 80, vmax = 700)
+
+#%%
+a, b = 16, 23
+w = 32
+a2 = np.mean(pre)/np.mean(post)
+
+pre1_chico = pre[ int(w*a) : int(w*(a+1)), int(w*b) : int(w*(b+1)) ]
+post0_chico = post[int(w*a) : int(w*(a+1)), int(w*b) : int(w*(b+1))]*a2 
+
+plt.figure()
+plt.title('Pre')
+plt.imshow( pre1_chico , cmap = 'gray', vmin = 80, vmax = 700)
+
+plt.figure()
+plt.title('Post')
+plt.imshow( post0_chico , cmap = 'gray', vmin = 80, vmax = 700)
+
+
+#%%
+
+w = 32
+l = 1024//w
+std = np.zeros([ l ]*2)
+
+for a in range(l):
+    for b in range(l):
+        std[a,b] = np.std( pre[ int(w*a) : int(w*(a+1)), int(w*b) : int(w*(b+1)) ] )
+
+
+plt.figure()
+plt.title('Pre')
+plt.imshow( pre , cmap = 'gray', vmin = 80, vmax = 700)
+
+plt.figure()
+plt.title('std')
+plt.imshow(std, vmax = 150)
+plt.colorbar()
+
+
+#%%
+
+plt.hist( std.flatten(), bins = np.arange(40, 400, 10) )
+
+
+
+#%%
+
+plt.hist( stack_pre[-1].flatten(), bins = np.arange(0, 400, 2) )
 
 
 
