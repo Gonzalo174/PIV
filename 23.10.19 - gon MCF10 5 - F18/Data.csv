@@ -1,0 +1,59 @@
+Ubicacion,,,Numero,Hora,Región,X,Y,Zi,Zf,Zoom,Campo,Tamano imagen,Archivo,Tipo,Comentario 
+Carpeta,23.10.18 - gon MCF10 5 F18,,0,13:12,14,668,1183,-3,,2,106.066,1024,00-cel14-transpre,TRANS,
+Equipo,,,1,13:15,14,668,1183,-2,-8,2,106.066,1024,01-cel14-pre,PRE,
+Microscopio ,FV1000,,2,,14,668,1183,-3,,2,106.066,1024,02-cel14-transpre2,TRANS,
+Objetivo,60X: UPLSAPO 60X O NA:1.35 - ACEITE,,3,,15,230,-777,-3,,2.5,83.97,1024,03-cel15-transpre,TRANS,
+Campo,212.131,,4,13:33,15,230,-777,-2,-8,2.5,83.97,1024,04-cel15-pre,PRE,
+Laser,635,,5,,15,230,-777,-3,,2.5,83.97,1024,05-cel15-transpre2,TRANS,
+Dicroico principal,405/488/543/635,,6,,16,2320,-1215,-4,,2.7,77.82,1024,06-cel16-transpre,TRANS,
+Dicroico Ch1,Nada,,7,13:45,16,2320,-1215,-3,-9,2.7,77.82,1024,07-cel16-pre,PRE,
+Dicroico Ch2,Espejo,,8,,16,2320,-1215,-4,,2.7,77.82,1024,08-cel16-transpre2,TRANS,
+Pinhole,108,,9,,17,498,-379,-3,,2,106.066,1024,09-cel17-transpre,TRANS,
+Ch1,None,,10,14:00,17,498,-379,-2,-8,2,106.066,1024,10-cel17-pre,PRE,
+Ch2,(645;705),,11,,17,498,-379,-3,,2,106.066,1024,11-cel17-transpre2,TRANS,
+Tiempo por pixel,10,,12,,18,-554,-198,-5,,2,106.066,1024,12-cel18-transpre,TRANS,Bastante cerca de otra 
+Resolución XY,219,,13,14:14,18,-554,-198,-4,-10,2,106.066,1024,13-cel18-pre,PRE,
+Resolución Z,750,,14,,18,-554,-198,-5,,2,106.066,1024,14-cel18-transpre2,TRANS,
+,,,15,,19,21,-1368,-4,,1.7,124.783,1024,15-cel19-transpre,TRANS,Par de células pegadas 
+Adquisición Esferas,,,16,14:23,19,21,-1368,-4,-10,1.7,124.783,1024,16-cel19-pre,PRE,
+Potencia,0.205,,17,,19,21,-1368,-4,,1.7,124.783,1024,17-cel19-transpre2,TRANS,
+Kalman,2,,18,14:45,14,668,1183,-2,-9,2,106.066,1024,18-cel14-post,POST,
+HV Ch2,700,,19,,14,668,1183,-3,,2,106.066,1024,19-cel14-transpost,TRANS,
+HV Transmision,135,,20,,15,230,-777,-3,-9,2.5,83.97,1024,20-cel15-post,POST,
+Offset,1,,21,,15,230,-777,-3,,2.5,83.97,1024,21-cel15-transpost,TRANS,
+dZ,0.5,,22,15:02,17,498,-379,-2,-8,2,106.066,1024,22-cel17-post,POST,
+,,,23,,17,498,-379,-3,,2,106.066,1024,23-cel17-transpost,TRANS,
+Adquisición Esferas,,,24,15:14,18,-554,-198,-5,-11,2,106.066,1024,24-cel18-post,POST,KERNEL. El foco se desplazó bastante
+Potencia,0.005,,25,15:27,19,21,-1368,2,-4,1.7,124.783,1024,25-cel19-post,POST,"Cuando saltó KERNEL me moví acá antes de apagar así no tenía que prender el controler, que siempre te mueve un poco"
+Kalman,0,,26,15:39,16,2320,-1215,3,-3,2.7,77.82,1024,26-cel16-post0,POST0,"No se quiere despegar, las otras ya están redondas y esta aguanta. Puse medio ml más de tripsina a ver qué pasa. Tras otra dosis se despegó, pero quedó una irregularidad en el gel, puede que haya estado adherida a esta."
+HV Ch2,700,,27,15:46,16,2320,-1215,3,-3,2.7,77.82,1024,27-cel16-post,POST,Saqué otra un poco más centrada 
+HV Transmicion,235,,,,,,,,,,,,,,
+Offset,1,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,
+Cultivo,,,,,,,,,,,,,,,
+Muestra,F,,0,,20,-17,593,2,,2.5,84.852,1024,00-cel20-transpre,TRANS,"No hay esferas, estoy en el vidrio..?"
+Medio de medicion,DMEM F12 + SFB 5% + HEPES 10 mM,,1,9:45,21,-1274,2143,21,,2.5,84.852,1024,01-cel21-transpre,TRANS,
+Fecha de sembrado,2023/10/18,,2,,21,-1274,2143,22.5,16.5,2.5,84.852,1024,02-cel21-pre,PRE,Había una burbuja de aceite molestando. Subí y bajé con ganas el foco para apartarla
+Hora de sembrado,13:00,,3,,21,-1274,2143,21,,2.5,84.852,1024,03-cel21-transpre2,TRANS,
+Celulas sembradas,MCF10,,4,,22,758,2085,16,,3,70.71,1024,04-cel22-transpre,TRANS,
+Cantidad sembrada ,1*10^4,,5,10:06,22,758,2085,16,9,3,70.71,1024,05-cel22-pre,PRE,"Puede que la célula enfoque mejor más abajo, por lo que se ve en las esferas, pero no estoy seguro"
+Fecha de medicion,2023/10/19,,6,,22,758,2085,16,,3,70.71,1024,06-cel22-transpre2,TRANS,
+Hora de inicio,9:00,,7,,23,968,1799,13,,2,106.066,1024,07-cel23-transpre,TRANS,
+Hora de tripsina ,,,8,10:20,23,968,1799,14,7,2,106.066,1024,08-cel23-pre,PRE0,Línea de alta intensidad molestando 
+Hora de final,,,9,10:25,23,968,1799,14,7,2,106.066,1024,09-cel23-pre1,PRE,Sacada con la mitad del poder del láser para evitar saturación
+Clase de gel,B,,10,,23,968,1799,13,,2,106.066,1024,10-cel23-transpre2,TRANS,
+Nanoesferas ,Crimson ,,11,,24,-301,1833,12,,2,106.066,1024,11-cel24-transpre,TRANS,
+Concentración ,0.002,,12,10:37,24,-301,1833,13,7,2,106.066,1024,12-cel24-pre,PRE,"Las esferas parecen de arriba hacia abajo, plano inclinado?"
+,,,13,,24,-301,1833,12,,,106.066,1024,13-cel24-transpre2,TRANS,
+Pares pre-post,,,14,10:54,,-752,2072,20,-30,4,,1024,14-pasogrueso,,
+Comentarios,"En gran parte de la muestra no veo esferas, hay una porción 20 um más elevada en la que si hay",,,,,,,,,,,1024,,,
+,Pienso que deben estar agarradas al vidrio directamente porque en la interfaz hay mucha intensidad,,,,,,,,,,,1024,,,
+,,,,,,,,,,,,1024,,,
+,,,,,,,,,,,,1024,,,
+,,,,,,,,,,,,1024,,,
+,,,,,,,,,,,,1024,,,
+,,,,,,,,,,,,1024,,,
+,,,,,,,,,,,,1024,,,
+,,,,,,,,,,,,1024,,,
+,,,,,,,,,,,,1024,,,
+,,,,,,,,,,,,1024,,,
