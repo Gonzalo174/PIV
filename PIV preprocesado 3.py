@@ -20,19 +20,17 @@ plt.rcParams['figure.figsize'] = [10,10]
 plt.rcParams['font.size'] = 16
 
 #%% Import
-# path = r"C:\Users\gonza\1\Tesis\2023\\"
-path = r"D:\Gonzalo\\"
-carpetas = ["23.10.05 - gon MCF10 1 - A04", "23.10.05 - gon MCF10 2 - D04", "23.10.05 - gon MCF10 3 - E04", "23.10.06 - gon MCF10 4 - C04", "23.10.19 - gon MCF10 6 - G18" ]
-# muestras = [ "C16", "B16", "A16", "A23", "B23", "D23", "C23", "B30", "A30", "C30", "D30" ]
-distribucion = [ 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5 ]
-pre10 =  [ 8, 4, 5, 7, 4, 4, 4, 4, 4, 4, 5, 4, 5, 2, 4, 4, 4, 4, 4,  4, 6, 5, 6, 5, 5 ]
-post10 = [ 8, 4, 6, 6, 2, 5, 3, 3, 4, 2, 5, 4, 4, 4, 4, 5, 5, 4, 4,  4, 5, 7, 8, 4, 6 ]
-
+path = r"C:\Users\gonza\1\Tesis\2023\\"
+# path = r"D:\Gonzalo\\"
+carpetas = ["23.10.05 - gon MCF10 1 - A04", "23.10.05 - gon MCF10 2 - D04", "23.10.05 - gon MCF10 3 - E04", "23.10.06 - gon MCF10 4 - C04", "23.10.19 - gon MCF10 6 - G18", "23.10.20 - gon MCF10 7 - I18" ]
+distribucion = [ 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6 ]
+pre10 =  [ 8, 4, 5, 7, 4, 4, 4, 4, 4, 4, 5, 4, 5, 2, 4, 4, 4, 4, 4,  4, 6, 5, 6, 5, 5,  3, 4, 5, 5, 3 ]
+post10 = [ 8, 4, 6, 6, 2, 5, 3, 3, 4, 2, 5, 4, 4, 4, 4, 5, 5, 4, 4,  4, 5, 7, 8, 4, 6,  4, 5, 6, 4, 4 ]
 
 # %% PIV + NMT + Suavizado
 
 
-r = 25
+r = 26
 full_path1 = path + carpetas[distribucion[r]-1]
 
 name = carpetas[distribucion[r]-1][-3:] + "_R" + str(int(r))
@@ -44,9 +42,9 @@ field = metadata_region["Campo"].values[0]
 resolution = metadata_region["Tamano imagen"].values[0]
 pixel_size = field/resolution
 
-stack_pre = of.imread( full_path1 + r"\\" + metadata_region.loc[ metadata_region["Tipo"] == 'PRE' ]["Archivo"].values[0]+".oif" )[0]
+stack_pre = of.imread( full_path1 + r"\\" + metadata_region.loc[ metadata_region["Tipo"] == 'PRE' ]["Archivo"].values[1]+".oif" )[0]
 stack_post = of.imread( full_path1 + r"\\" + metadata_region.loc[ metadata_region["Tipo"] == 'POST' ]["Archivo"].values[0]+".oif" )[0]
-celula_pre = of.imread( full_path1 + r"\\" + metadata_region.loc[ metadata_region["Tipo"] == 'PRE' ]["Archivo"].values[0]+".oif" )[1,2]
+celula_pre = of.imread( full_path1 + r"\\" + metadata_region.loc[ metadata_region["Tipo"] == 'PRE' ]["Archivo"].values[1]+".oif" )[1,2]
 celula_post = of.imread( full_path1 + r"\\" + metadata_region.loc[ metadata_region["Tipo"] == 'POST' ]["Archivo"].values[0]+".oif" )[1,2+pre10[r-1]-post10[r-1]]
 # mascara = 1- iio.imread(path + r"PIV\Mascaras\\" + str( muestras[tup[0]-1] ) + "R" + str(tup[1]) + ".png")
 # mascara = mascara3
@@ -170,11 +168,11 @@ plt.show()
 # archivo1 = np.concatenate( (c_pre_a,c_post_a), axis = 1 )
 # archivo2 = np.concatenate( (pre_a,post_a) , axis = 1 )
 
-archivo0 = np.concatenate( (archivo1,archivo2), axis = 0 )
+# archivo0 = np.concatenate( (archivo1,archivo2), axis = 0 )
 
 #%%
 
-for r in range(20,26,1):
+for r in range(27,31,1):
     full_path1 = path + carpetas[distribucion[r]-1]
 
     name = carpetas[distribucion[r]-1][-3:] + "_R" + str(int(r))
