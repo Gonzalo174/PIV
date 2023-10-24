@@ -12,15 +12,14 @@ import imageio.v3 as iio
 from scipy import ndimage   # Para rotar imagenes
 from scipy import signal    # Para aplicar filtros
 import oiffile as of
-import os
 
 #%%
 plt.rcParams['figure.figsize'] = [10,10]
 plt.rcParams['font.size'] = 16
 
 #%% Import
-path = r"C:\Users\gonza\1\Tesis\2023\\"
-# path = r"D:\Gonzalo\\"
+# path = r"C:\Users\gonza\1\Tesis\2023\\"
+path = r"D:\Gonzalo\\"
 carpetas = ["23.10.05 - gon MCF10 1 - A04", "23.10.05 - gon MCF10 2 - D04", "23.10.05 - gon MCF10 3 - E04", "23.10.06 - gon MCF10 4 - C04", "23.10.19 - gon MCF10 6 - G18", "23.10.20 - gon MCF10 7 - I18" ]
 distribucion = [ 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6 ]
 pre10 =  [ 8, 4, 5, 7, 4, 4, 4, 4, 4, 4, 5, 4, 5, 2, 4, 4, 4, 4, 4,  4, 6, 5, 6, 5, 5,  3, 4, 5, 5, 3 ]
@@ -58,8 +57,6 @@ plt.plot( normalizar(err_post), label = "POST" )
 plt.grid(True)
 plt.legend()
 plt.title(name)
-
-
 
 
 
