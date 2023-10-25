@@ -128,7 +128,10 @@ for i in data[6:]:
         img = img[:,:,0]
     np.savetxt(i, 1 - img/np.max(img) )
     
-    
+#%%
+m0 = iio.imread("A16R3_10um_SS.png")
+#%%
+np.savetxt("A16_R03_m_10um.png", m0[:,:,0]/255)
     
     
     
