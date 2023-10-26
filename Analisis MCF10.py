@@ -36,8 +36,8 @@ cm2 = ListedColormap(c2)
 
 
 #%% Import
-path = r"C:\Users\gonza\1\Tesis\2023\\"
-# path = r"D:\Gonzalo\\"
+# path = r"C:\Users\gonza\+1\Tesis\2023\\"
+path = r"D:\Gonzalo\\"
 carpetas = ["23.10.05 - gon MCF10 1 - A04", "23.10.05 - gon MCF10 2 - D04", "23.10.05 - gon MCF10 3 - E04", "23.10.06 - gon MCF10 4 - C04", "23.10.19 - gon MCF10 6 - G18", "23.10.20 - gon MCF10 7 - I18" ]
 distribucion = [ 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5 ]
 pre10 =  [ 8, 4, 5, 7, 4, 4, 4, 4, 4, 4, 5, 4, 5, 2, 4, 4, 4, 4, 4,  4, 6, 5, 6, 5, 5,  3, 4, 5, 5, 3 ]
@@ -263,7 +263,10 @@ data.to_csv( "dataMCF10SS.csv" )
 #%% PIV + NMT + Suavizado
 
 
-r = 6
+pre10[0] = 8
+post10[0] = 8
+
+r = 1
 full_path1 = path + carpetas[ distribucion[r-1] ]
 
 name = carpetas[ distribucion[r-1] ][-3:] + "_R" + str(int( 100 + r ))[1:]
@@ -280,11 +283,23 @@ stack_pre = of.imread( full_path1 + r"\\" + metadata_region.loc[ metadata_region
 stack_post = of.imread( full_path1 + r"\\" + metadata_region.loc[ metadata_region["Tipo"] == 'POST' ]["Archivo"].values[0]+".oif" )[0]
 celula_pre = of.imread( full_path1 + r"\\" + metadata_region.loc[ metadata_region["Tipo"] == 'PRE' ]["Archivo"].values[0]+".oif" )[1,2]
 celula_post = of.imread( full_path1 + r"\\" + metadata_region.loc[ metadata_region["Tipo"] == 'POST' ]["Archivo"].values[0]+".oif" )[1,2+pre10[r-1]-post10[r-1]]
-mascara = np.loadtxt( path[:-6] + r"PIV\Mascaras MCF10\\" + name + "_m_00um.csv")
+mascara = np.loadtxt( path + r"PIV\Mascaras MCF10\\" + name + "_m_00um.csv")
 
 pre = stack_pre[ pre10[r-1] ]
 post = correct_driff( stack_post[ post10[r-1] ], pre, 50 )
    
+# if r == 1:
+#     delta = 4
+#     pre_profundo = stack_pre[ pre10[r+1] + delta ]
+#     post_profundo = correct_driff( stack_post[ post10[r+1] + delta ], pre_profundo, 50 )
+    
+#     sat = np.zeros([1024]*2)
+#     sat[ pre > 1000 ] = 1
+#     sat = area_upper(sat, kernel_size = 20, threshold = 0.1)
+#     plt.imshow(sat)
+#     pre = pre*(1-sat) + pre_profundo*sat
+#     post = post*(1-sat) + post_profundo*sat
+
 
 vi = 128
 it = 3
