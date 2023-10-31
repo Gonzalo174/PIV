@@ -98,6 +98,10 @@ plt.xlabel('Aumento')
 plt.ylabel('pixeles por micrometro [px]')
 plt.grid(True)
 
+'''
+m = (4.970+0.002)
+b = (0.001+0.005)
+'''
 
 
 #%%

@@ -18,30 +18,21 @@ import os
 #%%
 plt.rcParams['figure.figsize'] = [10,10]
 plt.rcParams['font.size'] = 16
-plt.rcParams['font.family'] = "Times New Roman"
+# plt.rcParams['font.family'] = "Times New Roman"
+plt.rcParams['font.family'] = "Yu Gothic"
 
-c0 = [(0, 0, 0), (0, 0, 0)]
-cm0 = ListedColormap(c0)
-c3 = [(1, 1, 1), (1, 1, 0)]
-cm3 = ListedColormap(c3)
-
-c1 = []
-c2 = []
-for i in range(1000):
-    c1.append((i/999,0,0))
-    c2.append((0,i/999,0))
-
-cm1 = ListedColormap(c1)
-cm2 = ListedColormap(c2)
-
+cm0 = ListedColormap( [(0, 0, 0), (0, 0, 0)] )               # Negro
+cm1 = ListedColormap( [(i/999,0,0) for i in range(1000)] )   # Negro - Rojo
+cm2 = ListedColormap( [(1,i/999,0) for i in range(1000)] )   # Negro - Verde
+cm3 = ListedColormap( [(1, 1, 1), (1, 1, 0)] )               # Blanco - Amarillo
 
 #%% Import
-# path = r"C:\Users\gonza\+1\Tesis\2023\\"
-path = r"D:\Gonzalo\\"
+path = r"C:\Users\gonza\1\Tesis\2023\\"
+# path = r"D:\Gonzalo\\"
 carpetas = ["23.10.05 - gon MCF10 1 - A04", "23.10.05 - gon MCF10 2 - D04", "23.10.05 - gon MCF10 3 - E04", "23.10.06 - gon MCF10 4 - C04", "23.10.19 - gon MCF10 6 - G18", "23.10.20 - gon MCF10 7 - I18" ]
 distribucion = [ 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5 ]
-pre10 =  [ 8, 4, 5, 7, 4, 4, 4, 4, 4, 4, 5, 4, 5, 2, 4, 4, 4, 4, 4,  4, 6, 5, 6, 5, 5,  3, 4, 5, 5, 3 ]
-post10 = [ 8, 4, 6, 6, 2, 5, 3, 3, 4, 2, 5, 4, 4, 4, 4, 5, 5, 4, 4,  4, 5, 7, 8, 4, 6,  4, 5, 6, 4, 4 ]
+pre10 =  [ 4, 4, 5, 4, 4, 4, 4, 4, 4, 4, 5, 4, 5, 2, 4, 4, 4, 4, 4,  4, 6, 5, 6, 5, 5,  3, 4, 5, 5, 3 ]
+post10 = [ 4, 4, 6, 3, 2, 5, 3, 3, 4, 2, 5, 4, 4, 4, 4, 5, 5, 4, 4,  4, 5, 7, 8, 4, 6,  4, 5, 6, 4, 4 ]
 
 
 cs = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 20, 22, 25 ] 
@@ -50,15 +41,28 @@ ss = [14, 15, 17, 18, 26, 27, 28, 29]
 #%%
 
 cel = []
+
 defo00 = []
-Ddefo00 = []
+Pdefo00 = []
+DPdefo00 = []
+Sdefo00 = []
+DSdefo00 = []
 Mdefo00 = []
+
 defo10 = []
-Ddefo10 = []
+Pdefo10 = []
+DPdefo10 = []
+Sdefo10 = []
+DSdefo10 = []
 Mdefo10 = []
+
 defo20 = []
-Ddefo20 = []
+Pdefo20 = []
+DPdefo20 = []
+Sdefo20 = []
+DSdefo20 = []
 Mdefo20 = []
+
 area = []
 
 
@@ -72,7 +76,9 @@ for r in ss:
 
     field = metadata_region["Campo"].values[0]
     resolution = metadata_region["Tamano imagen"].values[0]
-    pixel_size = field/resolution
+    # pixel_size = field/resolutio
+    zoom = metadata_region["Zoom"].values[0]
+    pixel_size = 1/(4.97*zoom)
 
     stack_pre = of.imread( full_path1 + r"\\" + metadata_region.loc[ metadata_region["Tipo"] == 'PRE' ]["Archivo"].values[0]+".oif" )[0]
     stack_post = of.imread( full_path1 + r"\\" + metadata_region.loc[ metadata_region["Tipo"] == 'POST' ]["Archivo"].values[-1]+".oif" )[0]
@@ -82,16 +88,47 @@ for r in ss:
     
     pre = stack_pre[ pre10[r-1] ]
     post = correct_driff( stack_post[ post10[r-1] ], pre, 50 )
+    
+    if r == 1:
+        delta = 5
+        pre_profundo = stack_pre[ pre10[r-1] + delta ]
+        post_profundo = correct_driff( stack_post[ post10[r-1] + delta ], pre_profundo, 50 )
+        
+        sat = np.zeros([1024]*2)
+        sat[ pre > 1000 ] = 1
+        sat = area_upper(sat, kernel_size = 20, threshold = 0.1)
+        # plt.imshow(sat)
+        pre = pre*(1-sat) + pre_profundo*sat
+        post = post*(1-sat) + post_profundo*sat
+        
+    if r == 4:
+        delta = 3
+        pre_profundo = stack_pre[ pre10[r-1] + delta ]
+        post_profundo = correct_driff( stack_post[ post10[r-1] + delta ], pre_profundo, 50 )
+        
+        sat = np.zeros([1024]*2)
+        sat[ pre > 1000 ] = 1
+        for u in range(4):
+            sat = area_upper(sat, kernel_size = 20, threshold = 0.1)
+        # plt.imshow(sat)
+        pre = pre*(1-sat) + pre_profundo*sat
+        post = post*(1-sat) + post_profundo*sat
+    
     if r == 17:
         pre[950:,900:] = stack_pre[ pre10[r-1]+6, 950:,900:]
         post[950:,900:] = stack_pre[ pre10[r-1]+6, 950:,900:]
         
-    vi = 128
+        
+    # vi = 128
+    vi = int( int( 3/ps )*4 )
     it = 3
-    bordes_extra = 10 # px
+    # bordes_extra = 10 # px
+    bordes_extra = int(np.round(vi/12))
+    if r == 6 or r == 22 or r == 25:
+        bordes_extra = int(np.round(vi/9))
 
     Noise_for_NMT = 0.2
-    Threshold_for_NMT = 5
+    Threshold_for_NMT = 2.5
     modo = "Smooth3"
     mapas = False
     suave0 = 3
@@ -133,11 +170,20 @@ for r in ss:
     plt.text(start_x + scale_pixels/2, start_y-25, f'{scale_length} {scale_unit}', color='black', weight='bold', ha='center', fontsize = "xx-large")
 
     plt.subplot(2,2,2)
-    plt.imshow( celula_post , cmap = 'gray' )
-    plt.xticks([])
-    plt.yticks([])
+    plt.imshow(np.zeros(pre.shape), cmap = ListedColormap([(1,1,1)]))
+    plt.imshow( mascara, cmap = cm3, alpha = 0.6 )
+    plt.quiver(x,y,X_nmt,-Y_nmt, scale = scale0, pivot='tail')
     for i in range(20):
         plt.plot([start_x, start_x + scale_pixels], [start_y + i - 10, start_y + i - 10], color='black', linewidth = 1)
+    plt.xticks([])
+    plt.yticks([])
+    plt.xlim([0,resolution])
+    plt.ylim([resolution,0])
+    # plt.imshow( celula_post , cmap = 'gray' )
+    # plt.xticks([])
+    # plt.yticks([])
+    # for i in range(20):
+    #     plt.plot([start_x, start_x + scale_pixels], [start_y + i - 10, start_y + i - 10], color='black', linewidth = 1)
 
     plt.subplot(2,2,3)
     plt.imshow( np.zeros(pre.shape), cmap = cm0 )
@@ -193,17 +239,30 @@ for r in ss:
 
 
     cel.append( name )
-    defo00.append( np.mean( np.sqrt( np.array(Y_cell_00)**2 + np.array(X_cell_00)**2 )*ps )  )
-    Ddefo00.append( np.std( np.sqrt( np.array(Y_cell_00)**2 + np.array(X_cell_00)**2 )*ps )  )
-    Mdefo00.append( np.max( np.sqrt( np.array(Y_cell_00)**2 + np.array(X_cell_00)**2 )*ps )  )
     
-    defo10.append( np.mean( np.sqrt( np.array(Y_cell_10)**2 + np.array(X_cell_10)**2 )*ps )  )
-    Ddefo10.append( np.std( np.sqrt( np.array(Y_cell_10)**2 + np.array(X_cell_10)**2 )*ps )  )
-    Mdefo10.append( np.max( np.sqrt( np.array(Y_cell_10)**2 + np.array(X_cell_10)**2 )*ps )  )
+    R_00 = np.sqrt( np.array(Y_cell_00)**2 + np.array(X_cell_00)**2 )*ps
+    defo00.append( R_00  )
+    Pdefo00.append( np.mean( R_00 ) )
+    DPdefo00.append( np.std( R_00 ) )
+    Sdefo00.append( np.sum( R_00 ) )
+    DSdefo00.append( np.std( R_00 )*len(R_00)  )
+    Mdefo00.append( np.max( R_00 )  )
     
-    defo20.append( np.mean( np.sqrt( np.array(Y_cell_20)**2 + np.array(X_cell_20)**2 )*ps )  )
-    Ddefo20.append( np.std( np.sqrt( np.array(Y_cell_20)**2 + np.array(X_cell_20)**2 )*ps )  )
-    Mdefo20.append( np.max( np.sqrt( np.array(Y_cell_20)**2 + np.array(X_cell_20)**2 )*ps )  )
+    R_10 = np.sqrt( np.array(Y_cell_10)**2 + np.array(X_cell_10)**2 )*ps
+    defo10.append( R_10  )
+    Pdefo10.append( np.mean( R_10 ) )
+    DPdefo10.append( np.std( R_10 ) )
+    Sdefo10.append( np.sum( R_10 ) )
+    DSdefo10.append( np.std( R_10 )*len(R_10)  )
+    Mdefo10.append( np.max( R_10 )  )
+        
+    R_20 = np.sqrt( np.array(Y_cell_20)**2 + np.array(X_cell_20)**2 )*ps
+    defo20.append( R_20  )
+    Pdefo20.append( np.mean( R_20 ) )
+    DPdefo20.append( np.std( R_20 ) )
+    Sdefo20.append( np.sum( R_20 ) )
+    DSdefo20.append( np.std( R_20 )*len(R_20)  )
+    Mdefo20.append( np.max( R_20 )  )
     
     area.append( np.sum( mascara )*ps**2 )
     
@@ -216,21 +275,33 @@ data = pd.DataFrame()
 
 
 data["Celula"] = cel
-data["Promedio (0 um)"] = defo00
-data["Error (0 um)"] = Ddefo00
-data["Maximo (0 um)"] = Mdefo00
-data["Promedio (10 um)"] = defo10
-data["Error (10 um)"] = Ddefo10
-data["Maximo (10 um)"] = Mdefo10
-data["Promedio (20 um)"] = defo20
-data["Error (20 um)"] = Ddefo20
-data["Maximo (20 um)"] = Mdefo20
+
+data["Defo0"] = defo00
+data["P0"] = Pdefo00
+data["DP0"] = DPdefo00
+data["S0"] = Sdefo00
+data["DS0"] = DSdefo00
+data["M0"] = Mdefo00
+
+data["Defo10"] = defo10
+data["P10"] = Pdefo10
+data["DP10"] = DPdefo10
+data["S10"] = Sdefo10
+data["DS10"] = DSdefo10
+data["M10"] = Mdefo10
+
+data["Defo20"] = defo20
+data["P20"] = Pdefo20
+data["DP20"] = DPdefo20
+data["S20"] = Sdefo20
+data["DS20"] = DSdefo20
+data["M20"] = Mdefo20
+
 data["Area"] = area
-data["Clase"] = ["MCF7SS"]*len(cel )
+data["Clase"] = ["MCF10SS"]*len(cel )
 
 
-
-data.to_csv( "dataMCF10SS.csv" )
+data.to_csv( "data_MCF10SS.csv" )
 
 
 
@@ -263,8 +334,9 @@ data.to_csv( "dataMCF10SS.csv" )
 #%% PIV + NMT + Suavizado
 
 
-pre10[0] = 8
-post10[0] = 8
+# pre10[0] = 8
+# post10[0] = 8
+# delta = 5
 
 r = 1
 full_path1 = path + carpetas[ distribucion[r-1] ]
@@ -277,37 +349,57 @@ metadata_region = metadata.loc[ metadata["Región"] == r ]
 
 field = metadata_region["Campo"].values[0]
 resolution = metadata_region["Tamano imagen"].values[0]
-pixel_size = field/resolution
+# pixel_size = field/resolutio
+zoom = metadata_region["Zoom"].values[0]
+pixel_size = 1/(4.97*zoom)
+ps = pixel_size
+
 
 stack_pre = of.imread( full_path1 + r"\\" + metadata_region.loc[ metadata_region["Tipo"] == 'PRE' ]["Archivo"].values[0]+".oif" )[0]
 stack_post = of.imread( full_path1 + r"\\" + metadata_region.loc[ metadata_region["Tipo"] == 'POST' ]["Archivo"].values[0]+".oif" )[0]
 celula_pre = of.imread( full_path1 + r"\\" + metadata_region.loc[ metadata_region["Tipo"] == 'PRE' ]["Archivo"].values[0]+".oif" )[1,2]
 celula_post = of.imread( full_path1 + r"\\" + metadata_region.loc[ metadata_region["Tipo"] == 'POST' ]["Archivo"].values[0]+".oif" )[1,2+pre10[r-1]-post10[r-1]]
-mascara = np.loadtxt( path + r"PIV\Mascaras MCF10\\" + name + "_m_00um.csv")
+mascara = np.loadtxt( path[:-6] + r"PIV\Mascaras MCF10\\" + name + "_m_00um.csv")
+# mascara = np.loadtxt( path + r"PIV\Mascaras MCF10\\" + name + "_m_00um.csv")
 
 pre = stack_pre[ pre10[r-1] ]
 post = correct_driff( stack_post[ post10[r-1] ], pre, 50 )
    
-# if r == 1:
-#     delta = 4
-#     pre_profundo = stack_pre[ pre10[r+1] + delta ]
-#     post_profundo = correct_driff( stack_post[ post10[r+1] + delta ], pre_profundo, 50 )
+if r == 1:
+    delta = 5
+    pre_profundo = stack_pre[ pre10[r-1] + delta ]
+    post_profundo = correct_driff( stack_post[ post10[r-1] + delta ], pre_profundo, 50 )
     
-#     sat = np.zeros([1024]*2)
-#     sat[ pre > 1000 ] = 1
-#     sat = area_upper(sat, kernel_size = 20, threshold = 0.1)
-#     plt.imshow(sat)
-#     pre = pre*(1-sat) + pre_profundo*sat
-#     post = post*(1-sat) + post_profundo*sat
+    sat = np.zeros([1024]*2)
+    sat[ pre > 1000 ] = 1
+    sat = area_upper(sat, kernel_size = 20, threshold = 0.1)
+    sat = area_upper(sat, kernel_size = 20, threshold = 0.1)
+    # plt.imshow(sat)
+    pre = pre*(1-sat) + pre_profundo*sat
+    post = post*(1-sat) + post_profundo*sat
+    
+if r == 4:
+    pre_profundo = stack_pre[ pre10[r-1] + delta ]
+    post_profundo = correct_driff( stack_post[ post10[r-1] + delta ], pre_profundo, 50 )
+    
+    sat = np.zeros([1024]*2)
+    sat[ pre > 1000 ] = 1
+    for u in range(4):
+        sat = area_upper(sat, kernel_size = 20, threshold = 0.1)
+    # plt.imshow(sat)
+    pre = pre*(1-sat) + pre_profundo*sat
+    post = post*(1-sat) + post_profundo*sat
 
 
-vi = 128
+# vi = 128
+vi = int( int( 3/ps )*4 )
 it = 3
-bordes_extra = 10 # px
+# bordes_extra = 10 # px
+bordes_extra = int(np.round(vi/12))
 
 Noise_for_NMT = 0.2
-Threshold_for_NMT = 5
-modo = "Smooth3"
+Threshold_for_NMT = 2.5
+modo = "Smooth5"
 # modo = "No control"
 mapas = False
 suave0 = 3
@@ -326,18 +418,6 @@ pre_plot = np.copy( (pre+5)*a - inf )
 post_plot = np.copy(post - inf )
 pre_plot[ pre < 0 ] = 0
 pre_plot[ post < 0 ] = 0
-
-c0 = [(0, 0, 0), (0, 0, 0)]
-cm0 = ListedColormap(c0)
-
-c1 = []
-c2 = []
-for i in range(1000):
-    c1.append((i/999,0,0))
-    c2.append((0,i/999,0))
-
-cm1 = ListedColormap(c1)
-cm2 = ListedColormap(c2)
 
 scale0 = 100
 scale_length = 10  # Length of the scale bar in pixels
@@ -391,7 +471,8 @@ plt.subplot(2,2,4)
 
 plt.imshow(np.zeros(pre.shape), cmap = ListedColormap([(1,1,1)]))
 plt.imshow( mascara, cmap = "Reds", alpha = 0.4 )
-plt.quiver(x,y,X_s,-Y_s, scale = scale0, pivot='tail')
+# plt.quiver(x,y,X_s,-Y_s, scale = scale0, pivot='tail')
+plt.quiver(x,y,X_nmt,-Y_nmt, scale = scale0, pivot='tail')
 
 # plt.plot([start_x+20, start_x + scale_pixels-20], [start_y-25, start_y-25], color='white', linewidth = 40)
 for i in range(20):
@@ -417,6 +498,19 @@ plt.show()
 # archivo2 = np.concatenate( (pre_a,post_a) , axis = 1 )
 
 # archivo0 = np.concatenate( (archivo1,archivo2), axis = 0 )
+
+
+print ( np.max( np.sqrt( np.array(Y_s)**2 + np.array(X_s)**2 )*ps ) )
+
+#%%
+
+plt.imshow( np.sqrt( np.array(Y_s)**2 + np.array(X_s)**2 )*ps )
+plt.colorbar()
+
+
+
+
+
 
 
 
