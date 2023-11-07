@@ -59,9 +59,9 @@ plt.grid( True )
 
 key = 'P10'
 plt.figure( figsize = [5,5] )
-sns.boxplot( [ df.loc[ df["Clase"] == 'MCF7SS' ][key].values, df.loc[ df["Clase"] == 'MCF7CS' ][key].values, df.loc[ df["Clase"] == 'MCF10SS' ][key].values, df.loc[ df["Clase"] == 'MCF10CS' ][key].values ]   )
+sns.boxplot( [ df.loc[ df["Clase"] == 'MCF10CS' ][key].values, df.loc[ df["Clase"] == 'MCF10SS' ][key].values, df.loc[ df["Clase"] == 'MCF7CS' ][key].values, df.loc[ df["Clase"] == 'MCF7SS' ][key].values ]  )
 plt.grid(True)
-plt.xticks([0,1,2,3], ['7SS','7CS','10SS','10CS'])
+plt.xticks([0,1,2,3], ['10CS','10SS','7CS','7SS'] )
 # plt.xticks([0,1,2,3], ['MCF7SS','MCF7CS','MCF10SS','MCF10CS'])
 plt.ylabel( "Deformación promedio [µm]" )
 plt.ylim([-0.01,0.26])
@@ -166,6 +166,68 @@ data = data.drop( 'Unnamed: 0', axis = 1 )
 data = data.set_index('Celula')
 
 data.to_csv( "celulas 28.10.csv" )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#%% Delinear
+plt.imshow(mascara)
+#%%
+mascara0 = smooth(mascara, 3)
+mascara1 = np.zeros([1024]*2)
+mascara1[mascara0 > 0.5] = 1
+#%%
+vecinos = [[-1,-1],[-1,0],[-1,1],[0,1],[1,1],[1,0],[1,-1],[0,-1]]
+
+# x_borde = [295]
+# y_borde = [598]
+
+y_borde = [600]
+x_borde = []
+j = 0
+while len(x_borde) == 0:
+    if mascara1[600,j] == 1:
+        x_borde.append(j-1)
+    j += 1    
+
+
+# while (y_borde[-1] - y_borde[0])**2 + (x_borde[-1] - x_borde[0])**2 <= 1 and len( x_borde ) > 1000:
+for i in range(10000):
+    x0 = x_borde[-1] 
+    y0 = y_borde[-1]
+    for j in range(8):
+        v0 = mascara1[ y0 + vecinos[j-1][0], x0 + vecinos[j-1][1] ]
+        v1 = mascara1[   y0 + vecinos[j][0],   x0 + vecinos[j][1] ]
+        if v0 == 0 and v1 == 1:
+            x_borde.append( x0 + vecinos[j-1][1] )
+            y_borde.append( y0 + vecinos[j-1][0] )
+    
+
+#%%
+
+plt.imshow( celula_pre, cmap='gray' )
+plt.plot(x_borde,y_borde,c = 'k', linestyle = (1, (10, 50)), linewidth = 2 )
+
+
+#%%
+# plt.imshow(mascara, cmap='gray', vmin = -1, vmax = 2)
+plt.plot(x_borde,y_borde,c = 'k', linestyle = (1, (10, 500)), linewidth = 2 )
+# plt.xlim([500,700])
+# plt.ylim([100,350])
+
+
+
 
 
 

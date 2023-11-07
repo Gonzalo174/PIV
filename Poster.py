@@ -48,8 +48,8 @@ pre_post7 = {(11,2):(6,5), (11,3):(4,3), (11,4):(4,4), (10,1):(4,3), (10,2):(8,4
 
 #%% MCF10
 
-r = 25
-mapa_de_colores = cm_R
+r = 27
+mapa_de_colores = cm_O
 
 full_path1 = path + carpetas[ distribucion[r-1] ]
 
@@ -136,19 +136,20 @@ d = int( ( resolution - len(Y_nmt)*wind )/2   )
 
 # Add the scale bar
 scale_bar_length = int(scale_pixels / plt.rcParams['figure.dpi'])  # Convert scale length to figure units
-start_x = d + 100  # Starting x-coordinate of the scale bar
+start_x = d + 50  # Starting x-coordinate of the scale bar
 start_y = resolution -( 2*wind ) + 10# Starting y-coordinate of the scale bar
 
 plt.figure(figsize=(12,12), tight_layout=True)
 plt.subplot(1,2,1)
 
-fondo = median_blur(celula_pre, 27)
+# fondo = median_blur(celula_pre, 27)
 plt.imshow( celula_pre - fondo, cmap = 'gray' )
+plt.plot(x_borde,y_borde,c = 'k', linestyle = (1, (10, 660)), linewidth = 2 )
 plt.xticks([])
 plt.yticks([])
 for i in range(20):
     plt.plot([start_x, start_x + scale_pixels], [start_y + i - 10, start_y + i - 10], color='black', linewidth = 1)
-plt.text(start_x + scale_pixels/2, start_y-40, f'{scale_length} {scale_unit}', color='black', weight='bold', ha='center', fontsize = "xx-large")
+# plt.text(start_x + scale_pixels/2, start_y-40, f'{scale_length} {scale_unit}', color='black', weight='bold', ha='center', fontsize = "xx-large")
 
 
 plt.subplot(1,2,2)
@@ -332,7 +333,7 @@ plt.show()
 #%% MCF7
 
 
-tup = (11,4)
+tup = (7,2)
 
 
 print(tup)
@@ -407,7 +408,7 @@ post_plot = np.copy(post - inf )
 pre_plot[ pre < 0 ] = 0
 pre_plot[ post < 0 ] = 0
 
-scale0 = 100
+scale0 = 150
 scale_length = 10  # Length of the scale bar in pixels
 scale_pixels = scale_length/pixel_size
 scale_unit = 'µm'  # Unit of the scale bar
@@ -422,6 +423,41 @@ start_y = resolution - ( 2*wind ) + 10# Starting y-coordinate of the scale bar
 
 fondo = median_blur(celula_pre, 27)
 fondo2 = median_blur(celula_post, 27)
+#%%
+mapa_de_colores = cm_R
+plt.figure(figsize=(12,12), tight_layout=True)
+plt.subplot(1,2,1)
+
+# fondo = median_blur(celula_pre, 27)
+plt.imshow( celula_pre - fondo, cmap = 'gray' )
+# plt.plot(x_borde,y_borde,c = 'k', linestyle = (1, (10, 660)), linewidth = 2 )
+plt.xticks([ ])
+plt.yticks([ ])
+for i in range(20):
+    plt.plot([start_x, start_x + scale_pixels], [start_y + i - 10, start_y + i - 10], color='black', linewidth = 1)
+# plt.text(start_x + scale_pixels/2, start_y-40, f'{scale_length} {scale_unit}', color='black', weight='bold', ha='center', fontsize = "xx-large")
+
+
+plt.subplot(1,2,2)
+plt.imshow(np.zeros(pre.shape), cmap = ListedColormap([(1,1,1)]))
+plt.imshow( mascara, cmap = mapa_de_colores, alpha = 0.6 )
+plt.imshow( 1-mascara10, cmap = mapa_de_colores, alpha = 0.6 )
+plt.quiver(x,y,X_s,-Y_s, scale = scale0, pivot='tail')
+# plt.quiver(x,y,X_nmt,-Y_nmt, scale = scale0, pivot='tail')
+
+# plt.plot([start_x+20, start_x + scale_pixels-20], [start_y-25, start_y-25], color='white', linewidth = 40)
+for i in range(20):
+    plt.plot([start_x, start_x + scale_pixels], [start_y + i - 10, start_y + i - 10], color='black', linewidth = 1)
+
+plt.xticks([])
+plt.yticks([])
+plt.xlim([0,resolution])
+plt.ylim([resolution,0])
+
+plt.show()
+
+
+
 
 #%%
 plt.figure(figsize=(20,20), tight_layout=True)
