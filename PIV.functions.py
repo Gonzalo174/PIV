@@ -170,6 +170,7 @@ def center_of_mass(binary_map):
     return CM 
 
 def normalizar(array):
+    array = np.array(array)
     return (array - min(array))/max(array - min(array))
 
 def correct_driff(img_post, img_pre, exploration, info = False):
@@ -276,17 +277,17 @@ def correct_driff_3D(stack_post, img_pre, exploration, info = False):
     """
     images_post = []
     corr = []
-    XY = []
+    YX = []
     for z in range(len(stack_post)):
         img_post = stack_post[z]
         img_post_centered, cross_corr_max, (y,x) = correct_driff(img_post, img_pre, exploration, info = True)
         images_post.append( img_post_centered )
         corr.append( cross_corr_max )
-        XY.append( (y,x) )
+        YX.append( (y,x) )
         
     
     if info:
-        devolver = images_post[ np.argmax(corr) ], ( np.argmax(corr), XY[np.argmax(corr)][0], XY[np.argmax(corr)][1] )
+        devolver = images_post[ np.argmax(corr) ], ( np.argmax(corr), YX[np.argmax(corr)][0], YX[np.argmax(corr)][1] )
     else:
         devolver = images_post[ np.argmax(corr) ]
     

@@ -23,7 +23,7 @@ plt.rcParams['font.family'] = "Yu Gothic"
 
 cm0 = ListedColormap( [(0, 0, 0), (0, 0, 0)] )               # Negro
 cm1 = ListedColormap( [(i/999,0,0) for i in range(1000)] )   # Negro - Rojo
-cm2 = ListedColormap( [(1,i/999,0) for i in range(1000)] )   # Negro - Verde
+cm2 = ListedColormap( [(0,i/999,0) for i in range(1000)] )   # Negro - Verde
 cm3 = ListedColormap( [(1, 1, 1), (1, 1, 0)] )               # Blanco - Amarillo
 
 #%% Import
@@ -89,36 +89,7 @@ for r in ss:
     pre = stack_pre[ pre10[r-1] ]
     post = correct_driff( stack_post[ post10[r-1] ], pre, 50 )
     
-    if r == 1:
-        delta = 5
-        pre_profundo = stack_pre[ pre10[r-1] + delta ]
-        post_profundo = correct_driff( stack_post[ post10[r-1] + delta ], pre_profundo, 50 )
-        
-        sat = np.zeros([1024]*2)
-        sat[ pre > 1000 ] = 1
-        sat = area_upper(sat, kernel_size = 20, threshold = 0.1)
-        # plt.imshow(sat)
-        pre = pre*(1-sat) + pre_profundo*sat
-        post = post*(1-sat) + post_profundo*sat
-        
-    if r == 4:
-        delta = 3
-        pre_profundo = stack_pre[ pre10[r-1] + delta ]
-        post_profundo = correct_driff( stack_post[ post10[r-1] + delta ], pre_profundo, 50 )
-        
-        sat = np.zeros([1024]*2)
-        sat[ pre > 1000 ] = 1
-        for u in range(4):
-            sat = area_upper(sat, kernel_size = 20, threshold = 0.1)
-        # plt.imshow(sat)
-        pre = pre*(1-sat) + pre_profundo*sat
-        post = post*(1-sat) + post_profundo*sat
-    
-    if r == 17:
-        pre[950:,900:] = stack_pre[ pre10[r-1]+6, 950:,900:]
-        post[950:,900:] = stack_pre[ pre10[r-1]+6, 950:,900:]
-        
-        
+
     # vi = 128
     vi = int( int( 3/ps )*4 )
     it = 3
@@ -144,7 +115,7 @@ for r in ss:
     pre_plot = np.copy( (pre+5)*a - inf )
     post_plot = np.copy(post - inf )
     pre_plot[ pre < 0 ] = 0
-    pre_plot[ post < 0 ] = 0
+    post_plot[ post < 0 ] = 0
 
     scale0 = 100
     scale_length = 10  # Length of the scale bar in pixels
@@ -338,7 +309,7 @@ data.to_csv( "data_MCF10SS.csv" )
 # post10[0] = 8
 # delta = 5
 
-r = 1
+r = 8
 full_path1 = path + carpetas[ distribucion[r-1] ]
 
 name = carpetas[ distribucion[r-1] ][-3:] + "_R" + str(int( 100 + r ))[1:]
@@ -417,7 +388,7 @@ a = np.mean(post)/np.mean(pre)
 pre_plot = np.copy( (pre+5)*a - inf )
 post_plot = np.copy(post - inf )
 pre_plot[ pre < 0 ] = 0
-pre_plot[ post < 0 ] = 0
+post_plot[ post < 0 ] = 0
 
 scale0 = 100
 scale_length = 10  # Length of the scale bar in pixels
@@ -471,8 +442,8 @@ plt.subplot(2,2,4)
 
 plt.imshow(np.zeros(pre.shape), cmap = ListedColormap([(1,1,1)]))
 plt.imshow( mascara, cmap = "Reds", alpha = 0.4 )
-# plt.quiver(x,y,X_s,-Y_s, scale = scale0, pivot='tail')
-plt.quiver(x,y,X_nmt,-Y_nmt, scale = scale0, pivot='tail')
+plt.quiver(x,y,X_s,-Y_s, scale = scale0, pivot='tail')
+# plt.quiver(x,y,X_nmt,-Y_nmt, scale = scale0, pivot='tail')
 
 # plt.plot([start_x+20, start_x + scale_pixels-20], [start_y-25, start_y-25], color='white', linewidth = 40)
 for i in range(20):
@@ -502,16 +473,30 @@ plt.show()
 
 print ( np.max( np.sqrt( np.array(Y_s)**2 + np.array(X_s)**2 )*ps ) )
 
+#%% G = 8.64 por construcción, E = (31.6+1.8) medido, E = 2G(1+v)
+
+fX, fY = ffttc_traction(X_s, Y_s, ps, ps, 31.6e3, sigma=0.83, filter="gaussian")#, fs = mascara )
+
+
 #%%
 
-plt.imshow( np.sqrt( np.array(Y_s)**2 + np.array(X_s)**2 )*ps )
-plt.colorbar()
+plt.imshow(np.zeros(pre.shape), cmap = ListedColormap([(1,1,1)]))
+plt.imshow( mascara, cmap = "Reds", alpha = 0.4 )
+# plt.quiver(x,y,X_s,-Y_s, scale = scale0, pivot='tail')
 
+plt.quiver(x,y,fX,-fY, pivot='tail')
 
+# plt.plot([start_x+20, start_x + scale_pixels-20], [start_y-25, start_y-25], color='white', linewidth = 40)
+for i in range(20):
+    plt.plot([start_x, start_x + scale_pixels], [start_y + i - 10, start_y + i - 10], color='black', linewidth = 1)
 
+plt.xticks([])
+plt.yticks([])
+plt.xlim([0,resolution])
+plt.ylim([resolution,0])
 
-
-
+# plt.savefig(name + '_figura.png')
+plt.show()
 
 
 
