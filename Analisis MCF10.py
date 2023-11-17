@@ -18,8 +18,8 @@ import os
 #%%
 plt.rcParams['figure.figsize'] = [10,10]
 plt.rcParams['font.size'] = 16
-# plt.rcParams['font.family'] = "Times New Roman"
-plt.rcParams['font.family'] = "Yu Gothic"
+plt.rcParams['font.family'] = "Times New Roman"
+# plt.rcParams['font.family'] = "Yu Gothic"
 
 cm0 = ListedColormap( [(0, 0, 0), (0, 0, 0)] )               # Negro
 cm1 = ListedColormap( [(i/999,0,0) for i in range(1000)] )   # Negro - Rojo

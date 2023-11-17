@@ -9,6 +9,63 @@ import numpy as np
 from scipy import signal
 from scipy.optimize import curve_fit
 
+def busca_esferas( img, ps = 0.1007, win = 3, th = 1 ):
+    std_img = np.std( img )
+    
+    ws = int( np.round( win/ps ) )
+    l = int( len(img)/ws )
+    std_matrix = np.zeros( [l]*2 )
+    
+    for j in range(l):
+        for i in range(l):
+            img_ = img[ int(ws*j) : int(ws*(j+1)), int(ws*i) : int(ws*(i+1)) ]
+            std_matrix[j,i] = np.std( img_ )
+    
+    win_with_sph = np.zeros( [l]*2 )
+    win_with_sph[ std_matrix/std_img > th ] = 1
+    
+    return win_with_sph, int(ws*l)
+
+
+def barra_de_escala( scale_length, pixel_size = 0.1007, scale_unit = 'µm', loc = 'lower right', sep = 1, img_len = 1000, font_size = "x-large", color = 'white', text = True, more_text = '', a_lot_of_text = '' ):
+    scale_pixels = scale_length/pixel_size
+    scale_bar_length = int( scale_pixels / plt.rcParams['figure.dpi'])  # Convert scale length to figure units
+    
+
+    for i in np.arange(0, -sep/pixel_size, -0.1):
+        plt.plot([ img_len - sep/pixel_size - scale_pixels, img_len - sep/pixel_size ], [img_len - sep/pixel_size + i, img_len - sep/pixel_size + i], color=color, linewidth = 2)
+    if text:
+        plt.text(img_len - sep/pixel_size - scale_pixels/2, img_len - 3*sep/pixel_size , f'{scale_length} {scale_unit}', color=color, weight='bold', ha='center', va = 'bottom', fontsize = font_size )
+
+    if more_text != '':    
+        plt.text(img_len - sep/pixel_size/2, sep/pixel_size , more_text, color=color, weight='bold', ha='right', va = 'top', fontsize = font_size )
+    if a_lot_of_text != '':
+        plt.text(sep/pixel_size, img_len - sep/pixel_size/2 , a_lot_of_text, color=color, weight='bold', ha='left', va = 'bottom', fontsize = font_size )
+
+    plt.xticks([])
+    plt.yticks([])
+
+def barra_de_escala0( scale_length, pixel_size = 0.1007, scale_unit = 'µm', loc = 'lower right', sep = 1, img_len = 1000, font_size = "x-large", color = 'white', text = True, more_text = '', a_lot_of_text = '', delta = 1 ):
+    scale_pixels = scale_length/pixel_size
+    scale_bar_length = int( scale_pixels / plt.rcParams['figure.dpi'])  # Convert scale length to figure units
+    
+    if loc == 'lower right':
+        start_x = int( img_len - ( scale_length + sep )/ps )
+        start_y = int( img_len - ( sep )/ps - 1 )
+        
+    for i in np.arange(0, sep/pixel_size, 0.1):
+        plt.plot([start_x, start_x + scale_pixels], [start_y + i, start_y + i], color=color, linewidth = 1)
+    if text:
+        plt.text(start_x + scale_pixels/2, start_y - delta*sep/pixel_size , f'{scale_length} {scale_unit}', color=color, weight='bold', ha='center', fontsize = font_size )
+    if more_text != '':    
+        plt.text(img_len - sep/pixel_size/2, sep/pixel_size , more_text, color=color, weight='bold', ha='right', va = 'top', fontsize = font_size )
+    if a_lot_of_text != '':
+        plt.text(sep/pixel_size, img_len - sep/pixel_size/2 , a_lot_of_text, color=color, weight='bold', ha='left', va = 'bottom', fontsize = font_size )
+
+    plt.xticks([])
+    plt.yticks([])
+
+
 def four_core(array2D):
     """
     Parameters
@@ -173,6 +230,46 @@ def normalizar(array):
     array = np.array(array)
     return (array - min(array))/max(array - min(array))
 
+
+def desvio_por_plano(stack):
+    desvios = np.zeros(len(stack))
+    for z in range(len(stack)):
+        desvios[z] = np.std( stack[z] )
+    return normalizar( desvios )
+
+def border(img, y0, k = 3):
+    vecinos = [[-1,-1],[-1,0],[-1,1],[0,1],[1,1],[1,0],[1,-1],[0,-1]]
+    mascara = np.zeros(img.shape)
+    img_s = smooth( img, k )
+    mascara[ img_s > 0.5 ] = 1
+
+    y_borde = [ y0 ]
+    x_borde = [    ]
+    j = 0
+    while len(x_borde) == 0:
+        if mascara[600,j] == 1:
+            x_borde.append(j-1)
+        j += 1    
+
+    seguir = True
+    while seguir:
+        x0 = x_borde[-1] 
+        y0 = y_borde[-1]
+        for j in range(8):
+            v0 = mascara[ y0 + vecinos[j-1][0], x0 + vecinos[j-1][1] ]
+            v1 = mascara[   y0 + vecinos[j][0],   x0 + vecinos[j][1] ]
+            if v0 == 0 and v1 == 1:
+                x_borde.append( x0 + vecinos[j-1][1] )
+                y_borde.append( y0 + vecinos[j-1][0] )
+        if ( x_borde[-1] == x_borde[0] and y_borde[-1] == y_borde[0] and len(x_borde) > 1 ) or len(x_borde) > 10000:
+            seguir = False
+
+    borde = np.concatenate( (  np.reshape( np.array( y_borde ), [1, len(y_borde)]) , np.reshape( np.array( x_borde ) ,  [1, len(y_borde)] ) ) , axis = 0 )
+
+    return borde
+
+
+
 def correct_driff(img_post, img_pre, exploration, info = False):
     """
     Parameters
@@ -324,9 +421,10 @@ def gaussian_2d_plot(xy, amplitude, xo, yo, sigma_x, sigma_y, theta, offset):
     c = (np.sin(theta) ** 2) / (2 * sigma_x ** 2) + (np.cos(theta) ** 2) / (2 * sigma_y ** 2)
     g = amplitude * np.exp(-(a * ((x - xo) ** 2) + 2 * b * (x - xo) * (y - yo) + c * ((y - yo) ** 2))) + offset
     return g
+   
 
 
-def iteration( img_post0, img_pre0, win_shape, exploration = 10, translation_Y = "None", translation_X = "None", edge = 100, mode = "Default"):
+def iteration( img_post0, img_pre0, win_shape, exploration = 10, translation_Y = "None", translation_X = "None", edge = 100, mode = "Default", A = 0.9, control = [(-1,-1)]):
     """
     Parameters
     ----------
@@ -346,6 +444,8 @@ def iteration( img_post0, img_pre0, win_shape, exploration = 10, translation_Y =
         Extra border, to prevent going outside post image. The default is 0.
     mode : str, optional
         Mode using to calculate maximum correlation. The default is "Default".
+    A : float, optional:
+        Controls the admisibility of PRE windows in relation to the presence of signal from nanospheres.
 
     Returns
     -------
@@ -361,7 +461,6 @@ def iteration( img_post0, img_pre0, win_shape, exploration = 10, translation_Y =
     if remain == win_shape:
         remain = 0
     
-    
     if type( translation_Y ) != str:
         divis = len(translation_Y)
         edge -= (divis*win_shape - img_shape)//2
@@ -371,10 +470,6 @@ def iteration( img_post0, img_pre0, win_shape, exploration = 10, translation_Y =
     else:  # aca se mete la primera si encaja con el tamano de ventana
         divis = int( ( img_shape + remain )/win_shape )
         
-    # print("divis = ", divis)
-    # print("edge = ", edge)
-    # print("remain = ", remain)
-
     Y = np.zeros([divis,divis])
     X = np.zeros([divis,divis])
     
@@ -383,12 +478,10 @@ def iteration( img_post0, img_pre0, win_shape, exploration = 10, translation_Y =
     if type( translation_X ) == str:
         translation_X = np.zeros([divis,divis])
         
-    cc_area = signal.correlate(img_post - img_post.mean(), img_pre - img_pre.mean(), mode = 'valid', method="fft")/(img_shape**2)
+    pre_std = np.std(img_pre0)
 
-    factor = 0.3
-
-    for j in range(divis):
-        for i in range(divis):
+    for j in range(1,divis-1,1):
+        for i in range(1,divis-1,1):
 
             Ay_pre = (j)*win_shape    +  edge  + int(translation_Y[j,i])
             By_pre = (j+1)*win_shape  +  edge  + int(translation_Y[j,i])
@@ -414,19 +507,52 @@ def iteration( img_post0, img_pre0, win_shape, exploration = 10, translation_Y =
                 y0, x0 = np.unravel_index( cross_corr.argmax(), cross_corr.shape )
                 y, x = -(y0 - exploration), -(x0 - exploration)
                 
-                cc_area_iteration = cross_corr[y0,x0]/(win_shape**2)
-                if cc_area_iteration > cc_area*factor:
+                pre_win_std = np.std( pre_win )
+                marca = 'r'
+                if pre_win_std > A*pre_std:
                     Y[j,i] = y
                     X[j,i] = x
-                    
+                    marca = 'g'
+
+                # punto = (j,i) 
+                # if punto in control:
+                R = np.sqrt( y**2 + x**2 )
+                if R > 2 and (0,0) in control:
+                    plt.figure( tight_layout=True )
+                    plt.subplot(2,2,1)
+                    plt.imshow( pre_win, cmap = cm_crimson, vmin = 100, vmax = 600 )
+                    barra_de_escala( 1, img_len = win_shape, sep = 0.15, pixel_size = 3/win_shape, font_size = 'xx-large', color = 'w' )
+
+                    plt.subplot(2,2,2)
+                    plt.imshow( post_bigwin[exploration:-exploration,exploration:-exploration], cmap = cm_green, vmin = 100, vmax = 600 )
+                    barra_de_escala( 1, img_len = win_shape, sep = 0.15, pixel_size = 3/win_shape, font_size = 'xx-large', color = 'w' )
+                 
+                    plt.subplot(2,2,3)
+                    plt.imshow( pre_win, cmap = cm_crimson, vmin = 100, vmax = 600 )
+                    plt.imshow( post_bigwin[ exploration - y : -exploration - y , exploration - x : -exploration - x], cmap = cm_green, vmin = 100, vmax = 600, alpha = 0.6 )
+                    barra_de_escala( 1, img_len = win_shape, sep = 0.15, pixel_size = 3/win_shape, font_size = 'xx-large', color = 'w' )
+             
+                    plt.subplot(2,2,4)
+                    l_cc = len(cross_corr)
+                    plt.imshow( np.fliplr(np.flipud(cross_corr)) , cmap = cm_yellow )
+                    plt.plot( [x + exploration],[y + exploration], 'o', c = 'b', ms = 10 )
+                    plt.plot( [3],[3], 'o', c = marca, ms = 40 )
+                    barra_de_escala( 0.5, img_len = l_cc, sep = 0.08, pixel_size = 3/win_shape, font_size = 'xx-large', color = 'w' )
+                    # plt.xlim([l_cc-0.5,-0.5])
+                    # plt.ylim([l_cc-0.5,-0.5])
+
+                    plt.show()
+
+        
             if mode == "Fit":
                 cross_corr = smooth( cross_corr , 3 )
                 y0, x0 = np.unravel_index( cross_corr.argmax(), cross_corr.shape )
                 y, x = -(y0 - exploration), -(x0 - exploration)
                 yo, xo = -y, -x
                 
-                cc_area_iteration = cross_corr[y0,x0]/(win_shape**2)
-                if cc_area_iteration > cc_area*factor:
+                pre_win_std = np.std( pre_win )
+                marca = 'r'
+                if pre_win_std > A*pre_std:
                     data = cross_corr
                     u, v = np.meshgrid(np.linspace(-exploration, exploration, 2*exploration+1), np.linspace(-exploration, exploration, 2*exploration+1) )
                     amplitude0 = np.max(data)-np.min(data)
@@ -437,18 +563,50 @@ def iteration( img_post0, img_pre0, win_shape, exploration = 10, translation_Y =
                     
                     Y[j,i] = -yo
                     X[j,i] = -xo
+                    marca = 'g'
                     
-                    if win_shape == 32 and i%4==1 and j%4==0 and mapas:
-                        plt.figure()
-                        plt.yticks( np.arange( exploration )*2 +1, -(np.arange( exploration )*2 + 1 - exploration) )
-                        plt.xticks( np.arange( exploration )*2 +1, np.arange( exploration )*2 + 1 - exploration )
-                        plt.xlabel("Distancia [px]")
-                        plt.ylabel("Distancia [px]")
-                        plt.title("Correlación cruzada: "+str(i)+"-"+str(j))
-                        plt.imshow( np.flip(smooth( cross_corr , 3 ),1), vmax = 1000000 )
-                        plt.plot( [exploration+x], [y0], 'o',c = 'red', markersize = 10 )
-                        plt.plot( [exploration-xo], [exploration+yo], 'o',c = 'green', markersize = 10 )
+                punto = (j,i) 
+                if punto in control:
+                # if pre_win_std < A*pre_std:   
+                    plt.figure( tight_layout=True )
+                    plt.subplot(2,2,1)
+                    plt.imshow( pre_win, cmap = cm_crimson, vmin = 100, vmax = 600 )
+                    barra_de_escala( 1, img_len = win_shape, sep = 0.15, pixel_size = 3/win_shape, font_size = 'xx-large', color = 'w' )
+                    
+                    plt.subplot(2,2,2)
+                    plt.imshow( post_bigwin[exploration:-exploration,exploration:-exploration], cmap = cm_crimson, vmin = 100, vmax = 600 )
+                    barra_de_escala( 1, img_len = win_shape, sep = 0.15, pixel_size = 3/win_shape, font_size = 'xx-large', color = 'w' )
 
+                    plt.subplot(2,2,3)
+                    plt.imshow( pre_win, cmap = cm_crimson, vmin = 100, vmax = 600 )
+                    plt.imshow( post_bigwin[ exploration - y : -exploration - y , exploration - x : -exploration - x], cmap = cm_green, vmin = 100, vmax = 600, alpha = 0.6 )
+                    barra_de_escala( 1, img_len = win_shape, sep = 0.15, pixel_size = 3/win_shape, font_size = 'xx-large', color = 'w' )
+
+                    plt.subplot(2,2,4)
+                    l_cc = len(cross_corr)
+                    plt.imshow( np.fliplr(np.flipud(cross_corr)) , cmap = cm_yellow )
+                    plt.plot( [x0],[y0], 'x', c = 'b', ms = 20, label = "Máximo" )
+                    if exploration+xo < l_cc and exploration+yo < l_cc:
+                        plt.plot( [exploration+xo], [exploration+yo], '+', c = 'k', markersize = 20, label = 'Ajuste' )
+                    else: 
+                        plt.plot( [exploration - 2],[1], 'x', c = 'r', ms = 20 )
+                    plt.plot( [1],[1], 'o', c = marca, ms = 40 )
+                    barra_de_escala( 0.5, img_len = l_cc, sep = 0.075, pixel_size = 3/win_shape, font_size = 'xx-large', color = 'w' )
+                    # plt.xlim([l_cc-1,0])
+                    # plt.ylim([l_cc-1,0])
+                    plt.legend()
+
+                    plt.show()
+            
+            if mode == "Default":
+                y0, x0 = np.unravel_index( cross_corr.argmax(), cross_corr.shape )
+                y, x = -(y0 - exploration), -(x0 - exploration)
+                
+                pre_win_std = np.std( pre_win )
+                if pre_win_std > A*pre_std:
+                    Y[j,i] = y
+                    X[j,i] = x
+ 
             if mode == "No control":
                 y0, x0 = np.unravel_index( cross_corr.argmax(), cross_corr.shape )
                 y, x = -(y0 - exploration), -(x0 - exploration)
@@ -456,21 +614,13 @@ def iteration( img_post0, img_pre0, win_shape, exploration = 10, translation_Y =
                 Y[j,i] = y
                 X[j,i] = x
             
-            if mode == "Default":
-                y0, x0 = np.unravel_index( cross_corr.argmax(), cross_corr.shape )
-                y, x = -(y0 - exploration), -(x0 - exploration)
-                
-                cc_area_iteration = cross_corr[y0,x0]/(win_shape**2)
-                if cc_area_iteration > cc_area*factor:
-                    Y[j,i] = y
-                    X[j,i] = x  
                     
     deformation_map = Y+translation_Y, X+translation_X       
             
     return deformation_map
 
 
-def n_iterations( img_post, img_pre, win_shape_0, iterations = 3, exploration = 1000, mode = "Default"):
+def n_iterations( img_post, img_pre, win_shape_0, iterations = 3, exploration = 1000, mode = "Default", A = 0.9, control = [(-1,-1)]):
     """
     Parameters
     ----------
@@ -500,10 +650,11 @@ def n_iterations( img_post, img_pre, win_shape_0, iterations = 3, exploration = 
     Y = "None" #np.zeros([tam0//2, tam0//2])
 
     mode_array = ["Smooth3"]*(n-1) + [mode]
+    control_lista = [ [(-1,-1)] ]*(n-1) + [control]
     for n0 in range(n):
         ventana =  win_shape_0//(2**n0)
         print( n0, ventana )
-        Y, X = iteration( img_post, img_pre, ventana, exploration, four_core(Y), four_core(X), mode = mode_array[n0] )
+        Y, X = iteration( img_post, img_pre, ventana, exploration, four_core(Y), four_core(X), mode = mode_array[n0], A = A, control = control_lista[n0] )
 
     deformation_map = Y, X     
 
@@ -597,7 +748,8 @@ def nmt(Y_, X_, noise, threshold, mode = "Mean"):
 
     return Y, X, result
 
-def Z_iteration( stack_post, img_pre, win_shape, edge, plane, driff, exploration = 4, translation_Y = "None", translation_X = "None", mode = "Smooth3"):
+
+def Z_iteration0( stack_post0, img_pre0, win_shape, exploration = 1, translation_Y = "None", translation_X = "None", mode = "Smooth3", A = 0.9, z0 = 0 ):
     """
     Parameters
     ----------
@@ -613,8 +765,6 @@ def Z_iteration( stack_post, img_pre, win_shape, edge, plane, driff, exploration
         Deformation map obtenied in a previous iteration using a windows of twice side leght. The default is "None".
     translation_X : numpy.2darray like, optional
         Deformation map obtenied in a previous iteration using a windows of twice side leght. The default is "None".
-    edge : int, optional
-        Maximum exploration. The default is 0.
     mode : str, optional
         Mode using to calculate maximum correlation. The default is "Default".
 
@@ -624,79 +774,82 @@ def Z_iteration( stack_post, img_pre, win_shape, edge, plane, driff, exploration
         Arrays containing the resulting deformation in Y and X, that is the sum of the previous deformation maps and the calculated position of the cross correlation maximums. 
 
     """
-    img_shape = img_pre.shape[0]
+    l0 = int( len(img_pre0) )
+    l = int( len(translation_Y)*win_shape )
+    Dl = (l - l0)//2
+    img_pre = np.ones( [l]*2 )
+    img_pre[ Dl : l0 + Dl, Dl : l0 + Dl ] = img_pre0
+    stack_post = np.ones( [len(stack_post0),l,l] )
+    stack_post[ :, Dl : l0 + Dl, Dl : l0 + Dl ] = stack_post0
     
-    img_post0 = correct_driff( stack_post[ plane ] , img_pre, 50)
+    if z0 == 0:
+        img_post, ZYX = correct_driff_3D( stack_post, img_pre, 50, info = True)
+    else:
+        img_post = correct_driff( stack_post[ z0 ], img_pre, 50)
 
-    cc_area = signal.correlate(img_post0 - img_post0.mean(), img_pre - img_pre.mean(), mode = 'valid', method="fft")/(img_shape**2)
-    factor = 0.3
     
     divis = translation_Y.shape[0]
     Z = np.zeros([divis,divis])
     Y = np.zeros([divis,divis])
     X = np.zeros([divis,divis])
 
-    for j in range(divis):
-        for i in range(divis):
+    pre_std = np.std(img_pre)
 
-            Ay_pre = (j)*win_shape    +  edge  + (int(translation_Y[j,i]) + driff[0])
-            By_pre = (j+1)*win_shape  +  edge  + (int(translation_Y[j,i]) + driff[0])
-            Ax_pre = (i)*win_shape    +  edge  + (int(translation_X[j,i]) + driff[1])
-            Bx_pre = (i+1)*win_shape  +  edge  + (int(translation_X[j,i]) + driff[1])
+    for j in range(1, divis -1, 1):
+        for i in range(1, divis -1, 1):
 
-            Ay_post = (j)*(win_shape)   +  edge - exploration
-            By_post = (j+1)*(win_shape) +  edge + exploration
-            Ax_post = (i)*(win_shape)   +  edge - exploration
-            Bx_post = (i+1)*(win_shape) +  edge + exploration
+            Ay_pre = (j)*win_shape    + (int(translation_Y[j,i]) )
+            By_pre = (j+1)*win_shape  + (int(translation_Y[j,i]) )
+            Ax_pre = (i)*win_shape    + (int(translation_X[j,i]) )
+            Bx_pre = (i+1)*win_shape  + (int(translation_X[j,i]) )
+
+            Ay_post = (j)*(win_shape)   - exploration
+            By_post = (j+1)*(win_shape) + exploration
+            Ax_post = (i)*(win_shape)   - exploration
+            Bx_post = (i+1)*(win_shape) + exploration
             
             pre_win = img_pre[ Ay_pre : By_pre, Ax_pre : Bx_pre ]
-            max_corr = []
             
-            # if j == 3 and i == 4:
-            #     plt.figure()
-                # plt.title('Pre')
-                # plt.imshow(pre_win, cmap = "gray")
-
-        
-            for k in range(5):
-                post_bigwin = stack_post[ plane + k - 2 , Ay_post : By_post, Ax_post : Bx_post ]
+            if j == j_p and i == i_p:
+                plt.figure( tight_layout=True )
+                plt.subplot(2,2,1)
+                plt.imshow( pre_win, cmap = cm, vmin = 100, vmax = 600 )
+                plt.xticks([])
+                plt.yticks([])
+                
+            max_corr = np.zeros(3)
+            
+            if z0 == 0:
+                z0 = ZYX[0]
+                
+            for k in range(-1,2,1):
+                post_bigwin = stack_post[ z0 + k , Ay_post : By_post, Ax_post : Bx_post ]
                 cross_corr = signal.correlate(post_bigwin - post_bigwin.mean(), pre_win - pre_win.mean(), mode = 'valid', method = "fft") 
 
-                # if j == 16 and i == 26:
-                #     plt.figure()
-                #     plt.title( 'Post' + str(k - 1) )
-                #     plt.imshow(post_bigwin[exploration:-exploration,exploration:-exploration], cmap = "gray")
-
-                
+                if j == j_p and i == i_p:
+                    plt.subplot(2,2,k+3)
+                    plt.imshow( post_bigwin[exploration:-exploration,exploration:-exploration], cmap = cm, vmin = 100, vmax = 600 )
+                    plt.xticks([])
+                    plt.yticks([])
+                    
                 if mode[:-1] == "Smooth" or mode == "Smooth":
                     ks = 3
                     if mode[-1] != "h":
                         ks = int(mode[-1])
                     cross_corr = smooth( cross_corr , ks )
+                    max_corr[k] = np.max( cross_corr )
                     
-                    # if j == 16 and i == 26:
-                    #     plt.figure()
-                    #     plt.title('Corr')
-                    #     plt.imshow(cross_corr)  
+                Z[j,i]= max_corr.argmax() - 1
                     
-                    y0, x0 = np.unravel_index( cross_corr.argmax(), cross_corr.shape )
-                    y, x = -(y0 - exploration), -(x0 - exploration)
-                    
-                    # cc_area_iteration = cross_corr[y0,x0]/(win_shape**2)
-                    # if cc_area_iteration > cc_area*factor:
-                    #     Y[j,i] = y
-                    #     X[j,i] = x
-                        
-                    max_corr.append( np.max( cross_corr ) )
-                        
+                
                 if mode == "Fit":
                     # cross_corr = smooth( cross_corr , 3 )
                     y0, x0 = np.unravel_index( cross_corr.argmax(), cross_corr.shape )
                     y, x = -(y0 - exploration), -(x0 - exploration)
                     yo, xo = -y, -x
                     
-                    cc_area_iteration = cross_corr[y0,x0]/(win_shape**2)
-                    if cc_area_iteration > cc_area*factor:
+                    pre_win_std = np.std( pre_win )
+                    if pre_win_std > A*pre_std:
                         data = cross_corr
                         u, v = np.meshgrid(np.linspace(-exploration, exploration, 2*exploration+1), np.linspace(-exploration, exploration, 2*exploration+1) )
                         amplitude0 = np.max(data)-np.min(data)
@@ -708,17 +861,142 @@ def Z_iteration( stack_post, img_pre, win_shape, edge, plane, driff, exploration
                         Y[j,i] = -yo
                         X[j,i] = -xo
                         
-            if j == 16 and i == 26:
-                plt.figure()
-                plt.title('Z')
-                plt.plot( np.arange(5)-2,  max_corr )
-                        
-            z = np.array(max_corr).argmax() - 2
-            Z[j,i] = z
+                        max_corr[k] = amplitude - offset
                     
-    # deformation_map = Y+translation_Y, X+translation_X       
-            
+                    Z[j,i]= max_corr.argmax() - 1
+                    
     return Z
+
+# en desarrollo
+def Z_iteration( stack_post0, img_pre0, win_shape, exploration = 1, translation_Y = "None", translation_X = "None", mode = "Smooth3", A = 0.9, z0 = 0 ):
+    """
+    Parameters
+    ----------
+    stack_post : numpy.3darray like
+        3 dimentional array - images z stack of the nanospheres after removing the cells.
+    img_pre : numpy.2darray like
+        2 dimentional array - image of the nanospheres with the cells adhered on the hydrogel.
+    win_shape : int
+        Exploration windows side lenght in pixels.
+    exploration : int, optional
+        Number of pixels explored over the plane for each exploration window. The default is 10.
+    translation_Y : numpy.2darray like, optional
+        Deformation map obtenied in a previous iteration using a windows of twice side leght. The default is "None".
+    translation_X : numpy.2darray like, optional
+        Deformation map obtenied in a previous iteration using a windows of twice side leght. The default is "None".
+    mode : str, optional
+        Mode using to calculate maximum correlation. The default is "Default".
+
+    Returns
+    -------
+    deformation_map : 2 numpy.2darray
+        Arrays containing the resulting deformation in Y and X, that is the sum of the previous deformation maps and the calculated position of the cross correlation maximums. 
+
+    """
+    l0 = int( len(img_pre0) )
+    l = int( len(translation_Y)*win_shape )
+    Dl = (l - l0)//2
+    img_pre = np.ones( [l]*2 )
+    img_pre[ Dl : l0 + Dl, Dl : l0 + Dl ] = img_pre0
+    stack_post = np.ones( [len(stack_post0),l,l] )
+    stack_post[ :, Dl : l0 + Dl, Dl : l0 + Dl ] = stack_post0
+    
+    if z0 == 0:
+        img_post, ZYX = correct_driff_3D( stack_post, img_pre, 50, info = True)
+    else:
+        img_post = correct_driff( stack_post[ z0 ], img_pre, 50)
+
+    divis = translation_Y.shape[0]
+    Z = np.zeros([divis,divis])
+    Y = np.zeros([divis,divis])
+    X = np.zeros([divis,divis])
+
+    pre_std = np.std(img_pre)
+
+    for j in range(1, divis -1, 1):
+        for i in range(1, divis -1, 1):
+
+            Ay_pre = (j)*win_shape    + (int(translation_Y[j,i]) )
+            By_pre = (j+1)*win_shape  + (int(translation_Y[j,i]) )
+            Ax_pre = (i)*win_shape    + (int(translation_X[j,i]) )
+            Bx_pre = (i+1)*win_shape  + (int(translation_X[j,i]) )
+
+            Ay_post = (j)*(win_shape)   - exploration
+            By_post = (j+1)*(win_shape) + exploration
+            Ax_post = (i)*(win_shape)   - exploration
+            Bx_post = (i+1)*(win_shape) + exploration
+            
+            pre_win = img_pre[ Ay_pre : By_pre, Ax_pre : Bx_pre ]
+            
+            if j == j_p and i == i_p:
+                plt.figure( tight_layout=True )
+                plt.subplot(2,2,1)
+                plt.imshow( pre_win, cmap = cm, vmin = 100, vmax = 600 )
+                plt.xticks([])
+                plt.yticks([])
+                
+            max_corr = np.zeros(3)
+            Y_z = np.zeros(3)
+            X_z = np.zeros(3)
+            
+            if z0 == 0:
+                z0 = ZYX[0]
+                
+            for k in range(-1,2,1):
+                post_bigwin = stack_post[ z0 + k , Ay_post : By_post, Ax_post : Bx_post ]
+                cross_corr = signal.correlate(post_bigwin - post_bigwin.mean(), pre_win - pre_win.mean(), mode = 'valid', method = "fft") 
+
+                if j == j_p and i == i_p:
+                    plt.subplot(2,2,k+3)
+                    plt.imshow( post_bigwin[exploration:-exploration,exploration:-exploration], cmap = cm, vmin = 100, vmax = 600 )
+                    plt.xticks([])
+                    plt.yticks([])
+                    
+                if mode[:-1] == "Smooth" or mode == "Smooth":
+                    ks = 3
+                    if mode[-1] != "h":
+                        ks = int(mode[-1])
+                    cross_corr = smooth( cross_corr , ks )
+                    max_corr[ k + 1 ] = np.max( cross_corr )
+                    
+                    y0, x0 = np.unravel_index( cross_corr.argmax(), cross_corr.shape )
+                    y, x = -(y0 - exploration), -(x0 - exploration)
+                    
+                    pre_win_std = np.std( pre_win )
+                    if pre_win_std > A*pre_std:
+                        Y_z[ k + 1 ] = y
+                        X_z[ k + 1 ] = x
+                    
+                Z[j,i]= max_corr.argmax() - 1
+                Y[j,i] = Y_z[max_corr.argmax()]
+                X[j,i] = X_z[max_corr.argmax()]
+                
+                if mode == "Fit":
+                    # cross_corr = smooth( cross_corr , 3 )
+                    y0, x0 = np.unravel_index( cross_corr.argmax(), cross_corr.shape )
+                    y, x = -(y0 - exploration), -(x0 - exploration)
+                    yo, xo = -y, -x
+                    
+                    pre_win_std = np.std( pre_win )
+                    if pre_win_std > A*pre_std:
+                        data = cross_corr
+                        u, v = np.meshgrid(np.linspace(-exploration, exploration, 2*exploration+1), np.linspace(-exploration, exploration, 2*exploration+1) )
+                        amplitude0 = np.max(data)-np.min(data)
+                        
+                        popt = [amplitude0, xo, yo, 3, 3, 0, np.min(data)]
+                        popt, pcov = curve_fit_pro(gaussian_2d, (u, v), data.ravel(), p0 = popt )
+                        amplitude, xo, yo, sigma_x, sigma_y, theta, offset = popt
+                        
+                        Y_z[ k + 1 ] = -yo
+                        X_z[ k + 1 ] = -xo
+                        
+                        max_corr[ k + 1 ] = amplitude - offset
+                    
+                    Z[j,i]= max_corr.argmax() - 1
+                    Y[j,i] = Y_z[max_corr.argmax()]
+                    X[j,i] = X_z[max_corr.argmax()]
+                    
+    return Z, Y+translation_Y, X+translation_X
 
 
 

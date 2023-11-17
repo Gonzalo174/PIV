@@ -230,12 +230,18 @@ plt.imshow(m4_grande)
 
 #%%
 vecinos = [[-1,-1],[-1,0],[-1,1],[0,1],[1,1],[1,0],[1,-1],[0,-1]]
-mascara = m4_grande
+
+mascara0 = np.zeros(mascara.shape)
+img_s = smooth( mascara, 3 )
+mascara0[ img_s > 0.5 ] = 1
+
+
+
 y_borde = [600]
 x_borde = []
 j = 0
 while len(x_borde) == 0:
-    if mascara[600,j] == 1:
+    if mascara0[600,j] == 1:
         x_borde.append(j-1)
     j += 1    
 
@@ -246,8 +252,8 @@ while seguir:
     x0 = x_borde[-1] 
     y0 = y_borde[-1]
     for j in range(8):
-        v0 = mascara[ y0 + vecinos[j-1][0], x0 + vecinos[j-1][1] ]
-        v1 = mascara[   y0 + vecinos[j][0],   x0 + vecinos[j][1] ]
+        v0 = mascara0[ y0 + vecinos[j-1][0], x0 + vecinos[j-1][1] ]
+        v1 = mascara0[   y0 + vecinos[j][0],   x0 + vecinos[j][1] ]
         if v0 == 0 and v1 == 1:
             x_borde.append( x0 + vecinos[j-1][1] )
             y_borde.append( y0 + vecinos[j-1][0] )
@@ -258,9 +264,7 @@ while seguir:
 borde4 = np.concatenate( (  np.reshape( np.array( y_borde ), [1, len(y_borde)]) , np.reshape( np.array( x_borde ) ,  [1, len(y_borde)] ) ) , axis = 0 )
 
 
-#%%
-
-plt.imshow( 1-mascara, cmap='gray' , alpha = 0.1)
+plt.imshow( mascara0, cmap='gray' , alpha = 0.1)
 plt.plot(borde4[1],borde4[0],c = 'b', linewidth = 2 )
 
 #%%
@@ -279,6 +283,9 @@ for i in range(20):
     plt.plot([start_x, start_x + scale_pixels], [start_y + i - 10, start_y + i - 10], color='black', linewidth = 1)
 plt.text(start_x + scale_pixels/2, start_y - 35, f'{scale_length} {scale_unit}', color='black', weight='bold', ha='center', fontsize = "xx-large")
 
+
+
+#%%
 
 
 

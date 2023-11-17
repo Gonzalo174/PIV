@@ -20,6 +20,7 @@ plt.rcParams['figure.figsize'] = [10,10]
 plt.rcParams['font.size'] = 16
 plt.rcParams['font.family'] = "Times New Roman"
 
+
 #%%
 
 cm_crimson = ListedColormap( [(220*i/(999*255),20*i/(999*255),60*i/(999*255)) for i in range(1000)] )
@@ -335,38 +336,168 @@ plt.imshow( O6_60X[:int(d60X),:int(d60X)], cmap = 'gray', vmin = 70, vmax = Vm2 
 
 
 
+#%% Densidad cuantitativa
+
+C0002 = iio.imread( r"C:\Users\gonza\1\Tesis\Tesis\Mediciones aisladas\Tipo y concentración de nanoesferas\C_0.0002.tif" )[:,0]
+C004 = iio.imread( r"C:\Users\gonza\1\Tesis\Tesis\Mediciones aisladas\Tipo y concentración de nanoesferas\C_0.004.tif" )[:,0]
+
+O04 = iio.imread( r"C:\Users\gonza\1\Tesis\Tesis\Mediciones aisladas\Tipo y concentración de nanoesferas\O_0.04.tif" )[:,0]
+O04_60X = iio.imread( r"C:\Users\gonza\1\Tesis\Tesis\Mediciones aisladas\Tipo y concentración de nanoesferas\O_0.04_60X.tif" )[:,0]
+
+O6 = iio.imread( r"C:\Users\gonza\1\Tesis\Tesis\Mediciones aisladas\Tipo y concentración de nanoesferas\O_0.6.tif" )[:,0]
+O6_60X = iio.imread( r"C:\Users\gonza\1\Tesis\Tesis\Mediciones aisladas\Tipo y concentración de nanoesferas\O_0.6_60X.tif" )[:,0]
+
+O2 = iio.imread( r"C:\Users\gonza\1\Tesis\Tesis\Mediciones aisladas\Tipo y concentración de nanoesferas\O_0.2.tif" )[:,0]
+
+O_piola_60X = iio.imread( r"C:\Users\gonza\1\Tesis\Tesis\Mediciones aisladas\Tipo y concentración de nanoesferas\O_TFM.tif" )[-2,0]
 
 
 #%%
 
-stack = iio.imread( r"C:\Users\gonza\1\Tesis\Tesis\Mediciones aisladas\Tipo y concentración de nanoesferas\C_0.004.tif" )[:,0]
-pre = stack[-4]
-ps = 0.1007
+# stack = iio.imread( r"C:\Users\gonza\1\Tesis\Tesis\Mediciones aisladas\Tipo y concentración de nanoesferas\C_0.004.tif" )[:,0]
+
+# pre = C0002[:1024,1024:]
+# pre = C004
+
+# pre = O04_60X[:1024,1024:]
+pre = O6_60X[:1024,1024:]
+# pre = O_piola_60X
+
+ps = 105.5/len(pre)
+sigma = np.std( pre )
 
 plt.figure()
 plt.imshow( pre, cmap = 'gray', vmin = 70, vmax = 700 )
 
+
 #%%
-a, b = 4, 9
-w = 60
+
+w = int( np.round( 3/ps )  )
+l = int(len(stack)/w)
+a, b = np.random.randint(l), np.random.randint(l)
 pre_chico = pre[ int(w*a+2) : int(w*(a+1)+2), int(w*b+2) : int(w*(b+1)+2) ]
 
 plt.figure()
 plt.imshow( pre_chico, cmap = 'gray', vmin = 100, vmax = 700 )
-
-#%%
-a, b = 4, 8
-w = 15
-l = int(1024/w)
-desvios = np.zeros( [l]*2 )
-
-for j in range(l):
-    for i in range(l):
-        pre_chico = pre[ int(w*j+2) : int(w*(j+1)+2), int(w*i+2) : int(w*(i+1)+2) ]
-        desvios[j,i] = np.std( pre_chico )
-
-plt.imshow(desvios)
 plt.colorbar()
+#%%
+
+# plt.hist( pre.flatten(), bins = np.arange(100, 1000, 1), density=True )
+# plt.hist( pre_chico.flatten(), bins = np.arange(100, 1000, 1), density=True )
+# plt.show()
+
+#%% Crimson 60X
+
+ps = 0.1007
+V = 600
+cm = cm_crimson
+umbral = 0.9
+fs = 'xx-large'
+
+plt.figure(figsize = [14, 8], tight_layout=True)
+
+pre = C0002[:1024, :1024]
+desvios_bin, limit = busca_esferas( pre, th = umbral )
+plt.subplot(1,2,1)
+plt.imshow( pre[ :limit , :limit ], cmap = cm, vmin = 150, vmax = V )
+plt.imshow( desvios_bin, cmap = 'gray', alpha = 0.09, extent = [0,limit,limit,0])
+barra_de_escala( 10, sep = 2.5, more_text = '0.0002%', a_lot_of_text = str( int( np.mean( desvios_bin )*100 ) ) + '%', font_size = fs )
+
+pre = C004
+desvios_bin, limit = busca_esferas( pre, th = umbral )
+plt.subplot(1,2,2)
+plt.imshow( pre[ :limit , :limit ], cmap = cm, vmin = 150, vmax = V )
+plt.imshow( desvios_bin, cmap = 'gray', alpha = 0.09, extent = [0,limit,limit,0])
+barra_de_escala( 10, sep = 2.5, more_text = '0.004%', a_lot_of_text = str( int( np.mean( desvios_bin )*100 ) ) + '%', font_size = fs )
+
+plt.show()
+
+#%% Orange 60X
+
+V = 1000
+cm = cm_orange
+umbral = 0.5
+fs = 'large'
+
+plt.figure(figsize = [14, 8], tight_layout=True)
+
+pre = O04_60X[:1024, :1024]
+ps = 0.1007
+desvios_bin, limit = busca_esferas( pre, th = umbral + 0.1 )
+plt.subplot(1,3,1)
+plt.imshow( pre[ :limit , :limit ], cmap = cm, vmin = 100, vmax = 1000 )
+plt.imshow( desvios_bin, cmap = 'gray', alpha = 0.09, extent = [0,limit,limit,0])
+barra_de_escala( 10, sep = 2.5, more_text = '0.04%', a_lot_of_text = str( int( np.mean( desvios_bin )*100 ) ) + '%', font_size = fs )
+
+pre = O6_60X[:1024, :1024]
+ps = 0.1007
+desvios_bin, limit = busca_esferas( pre, th = umbral )
+plt.subplot(1,3,2)
+plt.imshow( pre[ :limit , :limit ], cmap = cm, vmin = 100, vmax = 1000 )
+plt.imshow( desvios_bin, cmap = 'gray', alpha = 0.09, extent = [0,limit,limit,0])
+barra_de_escala( 10, sep = 2.5, more_text = '0.6%', a_lot_of_text = str( int( np.mean( desvios_bin )*100 ) ) + '%', font_size = fs )
+
+pre = O_piola_60X
+ps = 105.47/1600
+desvios_bin, limit = busca_esferas( pre, ps, th = umbral )
+plt.subplot(1,3,3)
+plt.imshow( pre[ :limit , :limit ], cmap = cm, vmin = 100, vmax = 1000 )
+plt.imshow( desvios_bin, cmap = 'gray', alpha = 0.09, extent = [0,limit,limit,0])
+barra_de_escala( 10, pixel_size = ps, img_len = limit - 35, sep = 2.5, more_text = '????', a_lot_of_text = str( int( np.mean( desvios_bin )*100 ) ) + '%' , font_size = fs )
+
+plt.show()
+
+#%% Orange 40X
+
+V = 3000
+cm = cm_orange
+umbral = 0.5
+fs = 'large'
+ps = 316.8/1600
+
+plt.figure(figsize = [14, 8], tight_layout=True)
+
+pre = O04[ :int( 100/ps ), :int( 100/ps ) ]
+desvios_bin, limit = busca_esferas( pre, ps, th = umbral + 0.1 )
+plt.subplot(1,3,1)
+plt.imshow( pre[ :limit , :limit ], cmap = cm, vmin = 100, vmax = V )
+plt.imshow( desvios_bin, cmap = 'gray', alpha = 0.09, extent = [0,limit,limit,0])
+barra_de_escala( 10, pixel_size = ps, img_len = limit - 10, sep = 2.5, more_text = '0.04%', a_lot_of_text = str( int( np.mean( desvios_bin )*100 ) ) + '%', font_size = fs )
+
+pre = O2[ :int( 100/ps ), :int( 100/ps ) ]
+desvios_bin, limit = busca_esferas( pre, ps, th = umbral )
+plt.subplot(1,3,2)
+plt.imshow( pre[ :limit , :limit ], cmap = cm, vmin = 100, vmax = V )
+plt.imshow( desvios_bin, cmap = 'gray', alpha = 0.09, extent = [0,limit,limit,0])
+barra_de_escala( 10, pixel_size = ps, img_len = limit - 10, sep = 2.5, more_text = '0.2%', a_lot_of_text = str( int( np.mean( desvios_bin )*100 ) ) + '%', font_size = fs )
+
+pre = O6[ :int( 100/ps ), :int( 100/ps ) ]
+desvios_bin, limit = busca_esferas( pre, ps, th = umbral )
+plt.subplot(1,3,3)
+plt.imshow( pre[ :limit , :limit ], cmap = cm, vmin = 100, vmax = V )
+plt.imshow( desvios_bin, cmap = 'gray', alpha = 0.09, extent = [0,limit,limit,0])
+barra_de_escala( 10, pixel_size = ps, img_len = limit - 10, sep = 2.5, more_text = '0.6%', a_lot_of_text = str( int( np.mean( desvios_bin )*100 ) ) + '%', font_size = fs )
+
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
