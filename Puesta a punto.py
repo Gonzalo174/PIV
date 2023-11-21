@@ -26,13 +26,18 @@ cm_green = ListedColormap( [(0,128*i/(999*255),0) for i in range(1000)] )
 cm_yellow = ListedColormap( [( (220*i/(999*255)),128*i/(999*255),0) for i in range(1000)] )
 cm_y = ListedColormap( [(1, 1, 1), (1, 1, 0)] )   # Blanco - Amarillo
 
+c1 = (0.12156862745098039, 0.4666666666666667, 0.7058823529411765)
+c2 = (1.0, 0.4980392156862745, 0.054901960784313725)
+c3 = (0.17254901960784313, 0.6274509803921569, 0.17254901960784313)
+c4 = (0.8392156862745098, 0.15294117647058825, 0.1568627450980392)
+
 #MCF7 D30 R4 cel9 del 1/9   0
 #MCF7 C30 R5 cel5 del 1/9   1
 #MCF10 D04 R9 5/10          2
 #MCF10 G18 R25 del 19/10    3
 #%% Invocacion
 
-cel = 0
+# cel = 0
 path = r"C:\Users\gonza\1\Tesis\2023\\"
 nombres = [ 'MCF7 D30_R04', 'MCF7 C30_R05', 'MCF10 D04_R09', 'MCF10 G18_R25'  ]
 regiones = [ 4, 5, 9, 25 ]
@@ -182,24 +187,49 @@ plt.colorbar()
 
 
 
+
+
+
+
+
+
+
+
+#%%
+cel = 3
+runcell('Invocacion', 'C:/Users/gonza/1/Tesis/PIV/Puesta a punto.py')
+print(ps)
+
 #%% Dependencia Axial de la deformación
 z0 = 2
 
-l = int( int( 1024//vi + 1 )*4 )
-Yz = np.zeros([len(stack_pre)-z0, l, l])
-Xz = np.zeros([len(stack_pre)-z0, l, l])
-
-Yz_s = np.zeros([len(stack_pre)-z0, l, l ])
-Xz_s = np.zeros([len(stack_pre)-z0, l, l ])
-
 it = 3
 vi = int( int( 3/ps )*2**(it-1) )
-bordes_extra = int(np.round(vi/2**(it-1)/3)) 
+bordes_extra = 8#int(np.round(vi/2**(it-1)/3)) 
 
 Noise_for_NMT = 0.2
 Threshold_for_NMT = 2.5
 modo = "Smooth3"
 suave0 = 3
+fs = 'x-large'
+
+# l = int( int( 1024//vi + 1 )*4 )
+zf = min(len(stack_pre),len(stack_post))-1
+
+pre = stack_pre[5]
+post, ZYX = correct_driff_3D( stack_post, pre, 20, info = True )
+delta_z = ZYX[0] - 5
+
+dominio, deformacion = n_iterations( post, pre, vi, it, exploration = bordes_extra, mode = modo, A = As[cel])
+x, y = dominio
+
+l = len(x)
+
+Yz = np.zeros([zf-z0, l, l])
+Xz = np.zeros([zf-z0, l, l])
+
+Yz_s = np.zeros([zf-z0, l, l ])
+Xz_s = np.zeros([zf-z0, l, l ])
 
 mascara_grosa = np.zeros( [l]*2 )
 for j in range(l):
@@ -207,12 +237,13 @@ for j in range(l):
         if  0 < int(x[j,i]) < 1024 and 0 < int(y[j,i]) < 1024 and int(mascara10[ int(x[j,i]), int(y[j,i]) ]) == 1:
             mascara_grosa[i,j] = 1
 
-for z in range(z0,len(stack_pre)-1,1):
+# mascara_grosa3 = mascara_grosa
+for z in range(z0,zf,1):
+    print(z)
     pre = stack_pre[z]
-    post = correct_driff( stack_post[z], pre, 50 )
-    # post, data = correct_driff_3D( stack_post, pre, 50, info = True )
+    post = correct_driff( stack_post[z+delta_z], pre, 20 )
 
-    dominio, deformacion = n_iterations( post, pre, vi, it, exploration = bordes_extra, mode = modo, A = A)
+    dominio, deformacion = n_iterations( post, pre, vi, it, exploration = bordes_extra, mode = modo, A = As[cel])
     Y_nmt, X_nmt, res = nmt(*deformacion, Noise_for_NMT, Threshold_for_NMT)
     X_s, Y_s = smooth(X_nmt,suave0), smooth(Y_nmt, suave0)
     x, y = dominio
@@ -224,23 +255,24 @@ for z in range(z0,len(stack_pre)-1,1):
     Yz[z-z0] = Y_nmt*mascara_grosa
     
     scale0 = 100
-    # plt.figure()
-    
-    
+    plt.figure()
     plt.imshow( mascara, cmap = cm_y, alpha = 0.5 )
     # plt.quiver(x,y,X_nmt,-Y_nmt, scale = scale0, pivot='tail')
     plt.quiver(x,y,X_s,-Y_s, scale = scale0, pivot='tail')
     barra_de_escala( 10, sep = 1.5,  font_size = fs, color = 'k', more_text = 'Z = ' + str(z) )
     plt.xlim([0,1023])
     plt.ylim([1023,0])
+    plt.show()
     
 #%%
 
-Rz = np.sqrt(Xz_s**2 + Yz_s**2)
+Rz3 = np.sqrt(Xz_s**2 + Yz_s**2)*ps_list[3]
+
+#%%
 Rz_dist = np.array( [ Rz[z].flatten()*ps for z in range( len(Rz) ) ] )
 df = pd.DataFrame()
-for i in range(len(Rz_dist)-1):
-    df[ str(i/2 - 1) ] = Rz_dist[i]
+for i in range(zf-z0):
+    df[ str((i - 5)/2) ] = Rz_dist[i]
 
 #%%
 plt.figure(figsize=[12,4])
@@ -251,46 +283,98 @@ plt.grid()
 
 #%%
 # plt.hist( Rz_dist[2], bins=np.arange(-0.025, 1.025, 0.05) )
+# z_plot = (np.arange(1.5, -2.5, -0.5 ))
+z_plot = -0.5*(np.arange(z0, zf, 1 )-5)
+Rz_mean = np.array( [ np.sum( Rz[z] )/np.sum( mascara_grosa ) for z in range( len(Rz) ) ] )*ps
+# Rz_std = np.array( [ np.std( Rz[z] ) for z in range( len(Rz) -1) ] )*ps
+# Rz_max = np.array( [ np.max( Rz[z] ) for z in range( len(Rz) -1) ] )*ps
 
-Rz_mean = np.mean( np.mean( Rz, axis = 1 ), axis = 1 )*ps
-Rz_std = np.array( [ np.std( Rz[z] ) for z in range( len(Rz) -1) ] )*ps
-Rz_max = np.array( [ np.max( Rz[z] ) for z in range( len(Rz) -1) ] )*ps
-
-plt.plot(Rz_mean[:-1])
+plt.plot(z_plot, Rz_mean, 'o')
+plt.xlim([1.7,-2.2])
 # plt.plot(Rz_std)
 # plt.plot(Rz_max)
 
 #%%
+ps_list = [0.0804, 0.0918, 0.1007, 0.1007]
+
+#%%
+Rz_dist0 = []
+# ps = ps_list[0]
+
+Rz_ = Rz0
+mascara_grosa_ = mascara_grosa0
+for k in range(Rz_.shape[0]):
+    R_dist = []
+    for j in range(Rz_.shape[1]):
+        for i in range(Rz_.shape[2]):
+            if mascara_grosa_[i,j] == 1:
+                R_dist.append(Rz_[k,j,i])
+    Rz_dist0.append(R_dist)
+    
+#%%
+
+z_plot0 = -0.5*(np.arange(z0, len(Rz0)+z0, 1 )-5)
+z_plot1 = -0.5*(np.arange(z0, len(Rz1)+z0, 1 )-5)
+z_plot2 = -0.5*(np.arange(z0, len(Rz2)+z0, 1 )-5)
+z_plot3 = -0.5*(np.arange(z0, len(Rz3)+z0, 1 )-5)
+
+Rz_mean0 = np.array( [ np.sum( Rz0[z] )/np.sum( mascara_grosa0 ) for z in range( len(Rz0) ) ] )*ps_list[0]
+Rz_mean1 = np.array( [ np.sum( Rz1[z] )/np.sum( mascara_grosa1 ) for z in range( len(Rz1) ) ] )*ps_list[1]
+Rz_mean2 = np.array( [ np.sum( Rz2[z] )/np.sum( mascara_grosa2 ) for z in range( len(Rz2) ) ] )*ps_list[2]
+Rz_mean3 = np.array( [ np.sum( Rz3[z] )/np.sum( mascara_grosa3 ) for z in range( len(Rz3) ) ] )*ps_list[3]
+
+#%%
+plt.figure(figsize=[12,8])
+plt.plot(z_plot0, Rz_mean0, 'o', c = c1)
+plt.plot(z_plot1[:-3], Rz_mean1[:-3], 'o', c = c2)
+plt.plot(z_plot2[:-1], Rz_mean2[:-1], 'o', c = c3)
+plt.plot(z_plot3, Rz_mean3, 'o', c = c4)
+plt.ylabel( "Deformación promedio [µm]" )
+plt.xlabel( "Profundidad [µm]" )
+plt.grid(True)
+plt.xlim([2,-4])
+
+#%%
+plt.figure(figsize=[12,4])
+sns.violinplot( Rz_dist0, color = c1, cut = False)
+plt.ylabel( "Deformación [µm]" )
+plt.xlabel( "Profundidad [µm]" )
+plt.xticks( np.arange(len(Rz_dist0)), z_plot0 )
+# plt.xlim([12.5,-0.5])
+plt.grid()
+
+#%%
+plt.figure(figsize=[12,4])
+sns.violinplot( Rz_dist3, color = c4, cut = False)
+plt.ylabel( "Deformación [µm]" )
+plt.xlabel( "Profundidad [µm]" )
+plt.xticks( np.arange(len(Rz_dist3)), z_plot3 )
+# plt.xlim([12.5,-0.5])
+plt.grid()
 
 
 
 
 
 
-
-
-
-
-
-
-
-
+#%%
+cel = 3
+runcell('Invocacion', 'C:/Users/gonza/1/Tesis/PIV/Puesta a punto.py')
+print(ps)
 #%% Dependencia con la ventana de exploración de al deformación
 z0 = 5
 
-# bordes_extra = int(np.round(vi/2**(it-1)/4)) 
-bordes_extra = 10
-# ventanas = np.arange(4.7,2.6,-0.1) 
-ventanas = np.arange(60,24,-1)  # en px
+bordes_extra = 8
+ventanas = np.arange( int(6/ps), int(2/ps),-1)  # en px
 
-# Rz = np.zeros([len(ventanas)])
-Rz_s = []              
-ceros_lista = []
+Rz3 = []              
+Rz3_dist = []
 
 Noise_for_NMT = 0.2
 Threshold_for_NMT = 2.5
 modo = "Smooth3"
 suave0 = 3
+fs = 'x-large'
 
 pre = stack_pre[z0]
 post, data = correct_driff_3D( stack_post, pre, 50, info = True )
@@ -298,13 +382,17 @@ post, data = correct_driff_3D( stack_post, pre, 50, info = True )
 df = pd.DataFrame()
 
 for vs in ventanas:
+    # Determinación del campo de deformación
     it = 3
     vi = int( int( vs )*2**(it-1) )
 
-    dominio, deformacion = n_iterations( post, pre, vi, it, exploration = bordes_extra, mode = modo, A = A)
+    dominio, deformacion = n_iterations( post, pre, vi, it, exploration = bordes_extra, mode = modo, A = 0.8)
     Y_nmt, X_nmt, res = nmt(*deformacion, Noise_for_NMT, Threshold_for_NMT)
     X_s, Y_s = smooth(X_nmt,suave0), smooth(Y_nmt, suave0)
     x, y = dominio
+    
+    # Ajuste de las dimenciones de la mascara a las del campo
+    Rz_dist = []
     
     l = len(X_s)
     mascara_grosa = np.zeros( [l]*2 )
@@ -312,48 +400,106 @@ for vs in ventanas:
         for i in range(l):
             if  0 < int(x[j,i]) < 1024 and 0 < int(y[j,i]) < 1024 and int(mascara10[ int(x[j,i]), int(y[j,i]) ]) == 1:
                 mascara_grosa[i,j] = 1
+                Rz_ij = np.sqrt((X_nmt[i,j])**2 + (Y_nmt[i,j])**2)*ps
+                Rz_dist.append( Rz_ij )
     
-    
-    Rz = np.sqrt((X_nmt*mascara_grosa)**2 + (Y_nmt*mascara_grosa)**2)*ps
-    Rz_plano = Rz.flatten() 
-    ceros = 0
-    for r in Rz_plano:
-        if r == 0:
-            ceros += 1
-    
-    # Rz = np.sqrt((X_nmt)**2 + (Y_nmt)**2)*ps
+    # Recopilación de datos
+    Rz = np.sqrt((X_nmt)**2 + (Y_nmt)**2)*mascara_grosa*ps
+    Rz3.append( np.sum(Rz)/np.sum(mascara_grosa) )
+    Rz3_dist.append( Rz_dist )
 
-    Rz_s.append( Rz_plano ) 
-    ceros_lista.append( (len(Rz_plano) - ceros) )
-    
-    # scale0 = 100
-    # plt.figure()
-    # plt.imshow( mascara, cmap = cm_y, alpha = 0.5 )
-    # # plt.quiver(x,y,X_nmt,-Y_nmt, scale = scale0, pivot='tail')
-    # plt.quiver(x,y,X_s,-Y_s, scale = scale0, pivot='tail')
-    # barra_de_escala( 10, sep = 1.5,  font_size = fs, color = 'k', more_text = 'V = ' + str(np.round(vs,1)) )
-    # plt.xlim([0,1023])
-    # plt.ylim([1023,0])
-    # plt.show()
-    
+    # Gráfico
+    scale0 = 100
+    plt.figure()
+    plt.imshow( mascara, cmap = cm_y, alpha = 0.5 )
+    # plt.quiver(x,y,X_nmt,-Y_nmt, scale = scale0, pivot='tail')
+    plt.quiver(x,y,X_s,-Y_s, scale = scale0, pivot='tail')
+    barra_de_escala( 10, sep = 1.5,  font_size = fs, color = 'k', more_text = 'V = ' + str(np.round(vs,1)) )
+    plt.xlim([0,1023])
+    plt.ylim([1023,0])
+    plt.show()
+
+
 #%%
+ps_lista = [0.0805,0.0914,0.1007,0.1007 ]
+
+plt.figure( figsize = [12,5] )
+plt.plot( np.arange( int(6/ps[0]), int(2/ps[0]),-1)*ps[0], Rz0, 'o' )
+plt.plot( np.arange( int(6/ps[1]), int(2/ps[1]),-1)*ps[1], Rz1, 'o' )
+plt.plot( np.arange( int(6/ps[2]), int(2/ps[2]),-1)*ps[2], Rz2, 'o' )
+plt.plot( np.arange( int(6/ps[3]), int(2/ps[3]),-1)*ps[3], np.array(Rz3), 'o' )
+plt.ylabel( "Deformación promedio [µm]" )
+plt.xlabel( "Ventana final [µm]" )
+plt.xlim([6.1,1.9])
+plt.grid()
+
+#%%
+
+v0_int = np.arange( int(6/ps_lista[3]), int(2/ps_lista[3]),-1)
+v_corta_int = [ v0_int[i] for i in range(len(v0)) if i%4 == 0 ]
+
+#%%
+
+Rz3_dist_corto = [ Rz3_dist[i] for i in range(len(Rz3_dist)) if i%4 == 0 ]
+
 plt.figure(figsize=[12,4])
-sns.violinplot( Rz_s )
+sns.violinplot( Rz3_dist_corto, color = (0.839, 0.152, 0.156))
 plt.ylabel( "Deformación [µm]" )
 plt.xlabel( "Ventana final [µm]" )
-plt.xticks( np.arange(len(ventanas)), np.round( ventanas, 1 ) )
+# plt.xticks( np.linspace(9, 0, 10 ) , np.round( np.linspace( int(6/ps_lista[3]), int(2/ps_lista[3]), 10 )*ps_lista[3] , 1) )
+plt.xticks( np.linspace(-0.03, 9.01, 9), np.arange(6,1.5,-0.5)  )
+# plt.xlim([12.5,-0.5])
 plt.grid()
 
 #%%
-plt.figure( figsize = [12,4] )
-plt.plot( ventanas, [np.mean(Rz_s[i])*len(Rz_s[i])/( len(Rz_s[i]) - ceros_lista[i] ) for i in range(len(Rz_s))] , 'o' )
-plt.ylabel( "Deformación promedio [µm]" )
-plt.xlabel( "Ventana final [px]")#[µm]" )
-# plt.xticks( np.arange(len(ventanas)), np.round( ventanas, 1 ) )
-plt.xlim([61,24])
+
+Rz0_dist_corto = [ Rz0_dist[i] for i in range(len(Rz0_dist)) if i%4 == 0 ]
+
+plt.figure(figsize=[12,4])
+sns.violinplot( Rz0_dist_corto, color = (0.122, 0.466, 0.705), cut = True )
+plt.ylabel( "Deformación [µm]" )
+plt.xlabel( "Ventana final [µm]" )
+# plt.xticks( np.linspace(9, 0, 10 ) , np.round( np.linspace( int(6/ps_lista[3]), int(2/ps_lista[3]), 10 )*ps_lista[3] , 1) )
+plt.xticks( np.linspace(-0.03, 12.01, 9), np.arange(6,1.5,-0.5)  )
+plt.xlim([-0.7, 12.7])
+plt.yticks([0,0.3,0.6,0.9,1.2])
 plt.grid()
+#%%
+Rz3_dist_corto = [ Rz3_dist[i] for i in range(len(Rz3_dist)) if i%4 == 0 ]
 
+plt.figure(figsize=[12,4])
+sns.violinplot( Rz3_dist_corto, color = (0.839, 0.152, 0.156), cut = True )
+plt.ylabel( "Deformación [µm]" )
+plt.xlabel( "Ventana final [µm]" )
+# plt.xticks( np.linspace(9, 0, 10 ) , np.round( np.linspace( int(6/ps_lista[3]), int(2/ps_lista[3]), 10 )*ps_lista[3] , 1) )
+plt.xticks( np.linspace(-0.03, 9.01, 9), np.arange(6,1.5,-0.5)  )
+plt.xlim([-0.5, 9.5])
+plt.grid()
+#%%
+plt.plot( np.arange( int(6/ps_lista[3]), int(2/ps_lista[3]),-1)*ps_lista[3], np.array(Rz3), 'o' )
+plt.plot( np.arange( int(6/ps_lista[3]), int(2/ps_lista[3]),-1)*ps_lista[3], [ np.mean( Rz3[i] ) for i in range(len(Rz3))  ]   )
 
+#%%
+Rz0_dist_corto = [ Rz0_dist[i] for i in range(len(Rz0_dist)) if i%6 == 0 ]
+v0 = np.arange( int(6/ps_lista[0]), int(2/ps_lista[0]),-1)*ps_lista[0]
+v_corta = [ v0[i] for i in range(len(v0)) if i%6 == 0 ]
+
+plt.figure(figsize=[12,4])
+
+for i in range(len(Rz3_dist_corto)):
+    # print(i)
+    dist, x = np.histogram( Rz0_dist_corto[i], bins = np.linspace(0, 2, 11), density=True )
+    # plt.hist( i, bins = np.linspace(0, 2, 11) )
+    dist = np.convolve(dist, [1/3]*3)
+    plt.plot(x[:-1]+0.1, dist[1:-1], label = str(np.round( v_corta[i], 1 ) ) )
+    # plt.legend()
+plt.legend()
+#%%
+
+dist, x = np.histogram( Rz3_dist[0], bins = np.linspace(0, 2, 11) )
+plt.plot(x[:-1]+0.1, dist)
+#%%
+plt.hist( Rz0_dist[-10], bins = np.arange(10)/10 )
 
 #%%
 plt.quiver(x,y,X_nmt,Y_nmt, scale = scale0, pivot='tail')
@@ -459,15 +605,182 @@ print( np.round( np.max( np.sqrt(X**2 + Y**2) )*ps, 2)  )
 
 
 
+#%%
+
+
+cm1 = ListedColormap( [(1, 1, 1), (0.12156862745098039, 0.4666666666666667, 0.7058823529411765) ] )
+cm2 = ListedColormap( [(1, 1, 1), (1.0, 0.4980392156862745, 0.054901960784313725)] )
+cm3 = ListedColormap( [(1, 1, 1), (0.17254901960784313, 0.6274509803921569, 0.17254901960784313)] )
+cm4 = ListedColormap( [(1, 1, 1), (0.8392156862745098, 0.15294117647058825, 0.1568627450980392)] )
+cm5 = ListedColormap( [(1, 1, 1), (0.5803921568627451, 0.403921568627451, 0.7411764705882353)] )
+
+cm_list = [cm1,cm2,cm3,cm4]
+
+#%% 4 celulas
+
+
+plt.figure(figsize = [11, 11], tight_layout=True)
+
+for cel in [0,1,2,3]:
+ 
+    runcell('Invocacion', 'C:/Users/gonza/1/Tesis/PIV/Puesta a punto.py')
+    
+    pre = stack_pre[5]
+    post, data = correct_driff_3D( stack_post, pre, 50, info = True )
+    
+    # Determinación del campo de deformación
+    it = 3
+    vi = int( int( 3/ps )*2**(it-1) )
+
+    dominio, deformacion = n_iterations( post, pre, vi, it, exploration = bordes_extra, mode = modo, A = 0.8)
+    Y_nmt, X_nmt, res = nmt(*deformacion, Noise_for_NMT, Threshold_for_NMT)
+    X_s, Y_s = smooth(X_nmt,suave0), smooth(Y_nmt, suave0)
+    x, y = dominio
+    
+    fs = 'large'
+    plt.subplot(1,2,1)
+
+    plt.imshow( celula_pre, cmap = 'gray' )
+    plt.plot( b[1] ,b[0], c = 'w'  )
+    barra_de_escala( 20, pixel_size = ps, img_len = 1000,  sep = 2,  font_size = fs, color = 'w' )
+
+    plt.subplot(1,2,2)
+
+    scale0 = 100
+    plt.imshow( mascara, cmap = cm_list[cel], alpha = 0.5 )
+    plt.quiver(x,y,X_s,-Y_s, scale = scale0, pivot='tail')
+    barra_de_escala( 20, pixel_size = ps, sep = 2,  font_size = fs, color = 'k' )
+    plt.xlim([0,1023])
+    plt.ylim([1023,0])
 
 
 
+#%%
+plt.figure(figsize = [11, 11], tight_layout=True)
+cel = 0
+runcell('Invocacion', 'C:/Users/gonza/1/Tesis/PIV/Puesta a punto.py')
+
+pre = stack_pre[5]
+post, data = correct_driff_3D( stack_post, pre, 50, info = True )
+
+# Determinación del campo de deformación
+it = 3
+vi = int( int( 3/ps )*2**(it-1) )
+
+dominio, deformacion = n_iterations( post, pre, vi, it, exploration = bordes_extra, mode = modo, A = 0.8)
+Y_nmt, X_nmt, res = nmt(*deformacion, Noise_for_NMT, Threshold_for_NMT)
+X_s, Y_s = smooth(X_nmt,suave0), smooth(Y_nmt, suave0)
+x, y = dominio
+
+plt.subplot(4,2,2*cel+1)
+
+plt.imshow( celula_pre, cmap = 'gray' )
+plt.plot( b[1] ,b[0], c = 'w'  )
+barra_de_escala( 10, pixel_size = ps, img_len = 1024,  sep = 3,  font_size = fs, color = 'w' )
+
+plt.subplot(4,2,2*cel+2)
+
+scale0 = 100
+plt.imshow( mascara, cmap = cm_list[cel], alpha = 0.5 )
+plt.quiver(x,y,X_s,-Y_s, scale = scale0, pivot='tail')
+barra_de_escala( 10, pixel_size = ps, sep = 3,  font_size = fs, color = 'k' )
+plt.xlim([0,1023])
+plt.ylim([1023,0])
+
+
+cel = 1
+runcell('Invocacion', 'C:/Users/gonza/1/Tesis/PIV/Puesta a punto.py')
+
+pre = stack_pre[5]
+post, data = correct_driff_3D( stack_post, pre, 50, info = True )
+
+# Determinación del campo de deformación
+it = 3
+vi = int( int( 3/ps )*2**(it-1) )
+
+dominio, deformacion = n_iterations( post, pre, vi, it, exploration = bordes_extra, mode = modo, A = 0.8)
+Y_nmt, X_nmt, res = nmt(*deformacion, Noise_for_NMT, Threshold_for_NMT)
+X_s, Y_s = smooth(X_nmt,suave0), smooth(Y_nmt, suave0)
+x, y = dominio
+
+plt.subplot(4,2,2*cel+1)
+
+plt.imshow( celula_pre, cmap = 'gray' )
+plt.plot( b[1] ,b[0], c = 'w'  )
+barra_de_escala( 10, pixel_size = ps, img_len = 1024,  sep = 3,  font_size = fs, color = 'w' )
+
+plt.subplot(4,2,2*cel+2)
+
+scale0 = 100
+plt.imshow( mascara, cmap = cm_list[cel], alpha = 0.5 )
+plt.quiver(x,y,X_s,-Y_s, scale = scale0, pivot='tail')
+barra_de_escala( 10, pixel_size = ps, sep = 3,  font_size = fs, color = 'k' )
+plt.xlim([0,1023])
+plt.ylim([1023,0])
 
 
 
+cel = 2
+runcell('Invocacion', 'C:/Users/gonza/1/Tesis/PIV/Puesta a punto.py')
+
+pre = stack_pre[5]
+post, data = correct_driff_3D( stack_post, pre, 50, info = True )
+
+# Determinación del campo de deformación
+it = 3
+vi = int( int( 3/ps )*2**(it-1) )
+
+dominio, deformacion = n_iterations( post, pre, vi, it, exploration = bordes_extra, mode = modo, A = 0.8)
+Y_nmt, X_nmt, res = nmt(*deformacion, Noise_for_NMT, Threshold_for_NMT)
+X_s, Y_s = smooth(X_nmt,suave0), smooth(Y_nmt, suave0)
+x, y = dominio
+
+plt.subplot(1,2,2*cel+1)
+
+plt.imshow( celula_pre, cmap = 'gray' )
+plt.plot( b[1] ,b[0], c = 'w'  )
+barra_de_escala( 10, pixel_size = ps, img_len = 1024,  sep = 3,  font_size = fs, color = 'w' )
+
+plt.subplot(4,2,2*cel+2)
+
+scale0 = 100
+plt.imshow( mascara, cmap = cm_list[cel], alpha = 0.5 )
+plt.quiver(x,y,X_s,-Y_s, scale = scale0, pivot='tail')
+barra_de_escala( 10, pixel_size = ps, sep = 3,  font_size = fs, color = 'k' )
+plt.xlim([0,1023])
+plt.ylim([1023,0])
 
 
 
+cel = 3
+runcell('Invocacion', 'C:/Users/gonza/1/Tesis/PIV/Puesta a punto.py')
+
+pre = stack_pre[5]
+post, data = correct_driff_3D( stack_post, pre, 50, info = True )
+
+# Determinación del campo de deformación
+it = 3
+vi = int( int( 3/ps )*2**(it-1) )
+
+dominio, deformacion = n_iterations( post, pre, vi, it, exploration = bordes_extra, mode = modo, A = 0.8)
+Y_nmt, X_nmt, res = nmt(*deformacion, Noise_for_NMT, Threshold_for_NMT)
+X_s, Y_s = smooth(X_nmt,suave0), smooth(Y_nmt, suave0)
+x, y = dominio
+
+plt.subplot(4,2,2*cel+1)
+
+plt.imshow( celula_pre, cmap = 'gray' )
+plt.plot( b[1] ,b[0], c = 'w'  )
+barra_de_escala( 10, pixel_size = ps, img_len = 1024,  sep = 3,  font_size = fs, color = 'w' )
+
+plt.subplot(4,2,2*cel+2)
+
+scale0 = 100
+plt.imshow( mascara, cmap = cm_list[cel], alpha = 0.5 )
+plt.quiver(x,y,X_s,-Y_s, scale = scale0, pivot='tail')
+barra_de_escala( 10, pixel_size = ps, sep = 3,  font_size = fs, color = 'k' )
+plt.xlim([0,1023])
+plt.ylim([1023,0])
 
 
 

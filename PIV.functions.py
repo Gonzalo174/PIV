@@ -534,7 +534,7 @@ def iteration( img_post0, img_pre0, win_shape, exploration = 10, translation_Y =
              
                     plt.subplot(2,2,4)
                     l_cc = len(cross_corr)
-                    plt.imshow( np.fliplr(np.flipud(cross_corr)) , cmap = cm_yellow )
+                    plt.imshow( np.fliplr(np.flipud(cross_corr)) , cmap = 'Oranges' )
                     plt.plot( [x + exploration],[y + exploration], 'o', c = 'b', ms = 10 )
                     plt.plot( [3],[3], 'o', c = marca, ms = 40 )
                     barra_de_escala( 0.5, img_len = l_cc, sep = 0.08, pixel_size = 3/win_shape, font_size = 'xx-large', color = 'w' )
@@ -570,21 +570,21 @@ def iteration( img_post0, img_pre0, win_shape, exploration = 10, translation_Y =
                 # if pre_win_std < A*pre_std:   
                     plt.figure( tight_layout=True )
                     plt.subplot(2,2,1)
-                    plt.imshow( pre_win, cmap = cm_crimson, vmin = 100, vmax = 600 )
+                    plt.imshow( pre_win, cmap = 'Reds', vmin = 100, vmax = 600 )
                     barra_de_escala( 1, img_len = win_shape, sep = 0.15, pixel_size = 3/win_shape, font_size = 'xx-large', color = 'w' )
                     
                     plt.subplot(2,2,2)
-                    plt.imshow( post_bigwin[exploration:-exploration,exploration:-exploration], cmap = cm_crimson, vmin = 100, vmax = 600 )
+                    plt.imshow( post_bigwin[exploration:-exploration,exploration:-exploration], cmap = 'Greens', vmin = 100, vmax = 600 )
                     barra_de_escala( 1, img_len = win_shape, sep = 0.15, pixel_size = 3/win_shape, font_size = 'xx-large', color = 'w' )
 
                     plt.subplot(2,2,3)
-                    plt.imshow( pre_win, cmap = cm_crimson, vmin = 100, vmax = 600 )
-                    plt.imshow( post_bigwin[ exploration - y : -exploration - y , exploration - x : -exploration - x], cmap = cm_green, vmin = 100, vmax = 600, alpha = 0.6 )
+                    plt.imshow( pre_win, cmap = 'Reds', vmin = 100, vmax = 600 )
+                    plt.imshow( post_bigwin[ exploration - y : -exploration - y , exploration - x : -exploration - x], cmap = 'Greens', vmin = 100, vmax = 600, alpha = 0.6 )
                     barra_de_escala( 1, img_len = win_shape, sep = 0.15, pixel_size = 3/win_shape, font_size = 'xx-large', color = 'w' )
 
                     plt.subplot(2,2,4)
                     l_cc = len(cross_corr)
-                    plt.imshow( np.fliplr(np.flipud(cross_corr)) , cmap = cm_yellow )
+                    plt.imshow( np.fliplr(np.flipud(cross_corr)) , cmap = 'Oranges' )
                     plt.plot( [x0],[y0], 'x', c = 'b', ms = 20, label = "Máximo" )
                     if exploration+xo < l_cc and exploration+yo < l_cc:
                         plt.plot( [exploration+xo], [exploration+yo], '+', c = 'k', markersize = 20, label = 'Ajuste' )
@@ -813,7 +813,7 @@ def Z_iteration0( stack_post0, img_pre0, win_shape, exploration = 1, translation
             if j == j_p and i == i_p:
                 plt.figure( tight_layout=True )
                 plt.subplot(2,2,1)
-                plt.imshow( pre_win, cmap = cm, vmin = 100, vmax = 600 )
+                plt.imshow( pre_win, cmap = cm_crimson, vmin = 100, vmax = 600 )
                 plt.xticks([])
                 plt.yticks([])
                 
@@ -828,7 +828,7 @@ def Z_iteration0( stack_post0, img_pre0, win_shape, exploration = 1, translation
 
                 if j == j_p and i == i_p:
                     plt.subplot(2,2,k+3)
-                    plt.imshow( post_bigwin[exploration:-exploration,exploration:-exploration], cmap = cm, vmin = 100, vmax = 600 )
+                    plt.imshow( post_bigwin[exploration:-exploration,exploration:-exploration], cmap = cm_crimson, vmin = 100, vmax = 600 )
                     plt.xticks([])
                     plt.yticks([])
                     
@@ -931,7 +931,7 @@ def Z_iteration( stack_post0, img_pre0, win_shape, exploration = 1, translation_
             if j == j_p and i == i_p:
                 plt.figure( tight_layout=True )
                 plt.subplot(2,2,1)
-                plt.imshow( pre_win, cmap = cm, vmin = 100, vmax = 600 )
+                plt.imshow( pre_win, cmap = cm_crimson, vmin = 100, vmax = 600 )
                 plt.xticks([])
                 plt.yticks([])
                 
@@ -948,7 +948,7 @@ def Z_iteration( stack_post0, img_pre0, win_shape, exploration = 1, translation_
 
                 if j == j_p and i == i_p:
                     plt.subplot(2,2,k+3)
-                    plt.imshow( post_bigwin[exploration:-exploration,exploration:-exploration], cmap = cm, vmin = 100, vmax = 600 )
+                    plt.imshow( post_bigwin[exploration:-exploration,exploration:-exploration], cmap = cm_crimson, vmin = 100, vmax = 600 )
                     plt.xticks([])
                     plt.yticks([])
                     
