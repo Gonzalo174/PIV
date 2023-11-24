@@ -20,6 +20,13 @@ plt.rcParams['figure.figsize'] = [10,10]
 plt.rcParams['font.size'] = 16
 plt.rcParams['font.family'] = "Times New Roman"
 # plt.rcParams['font.family'] = "Yu Gothic"
+cm_crimson = ListedColormap( [(220*i/(999*255),20*i/(999*255),60*i/(999*255)) for i in range(1000)] )
+cm_green = ListedColormap( [(0,128*i/(999*255),0) for i in range(1000)] )
+cm_yellow = ListedColormap( [( (220*i/(999*255)),128*i/(999*255),0) for i in range(1000)] )
+cm_y = ListedColormap( [(1, 1, 1), (1, 1, 0)] )   # Blanco - Amarillo
+cm_ar = ListedColormap( [(0.122, 0.467, 0.706), (1, 1, 1), (0.839, 0.152, 0.157)] ) 
+cm_aa = ListedColormap( [(0.122, 0.467, 0.706), (1, 1, 1), (1.000, 0.498, 0.055)] ) 
+cm_aa2 = ListedColormap( [(0.122, 0.467, 0.706), (0, 0, 0), (1.000, 0.498, 0.055)] ) 
 
 cm0 = ListedColormap( [(0, 0, 0), (0, 0, 0)] )               # Negro
 cm1 = ListedColormap( [(i/999,0,0) for i in range(1000)] )   # Negro - Rojo
@@ -39,6 +46,7 @@ cs = [1, 4, 5, 6, 7, 8, 9, 11, 12, 13, 20, 22, 25 ]
 ss = [14, 15, 17, 18, 26, 27, 28, 29]
 
 #%%
+ws = 3
 
 cel = []
 
@@ -66,7 +74,7 @@ Mdefo20 = []
 area = []
 
 
-for r in ss:
+for r in cs:
     full_path1 = path + carpetas[ distribucion[r-1] ]
 
     name = carpetas[ distribucion[r-1] ][-3:] + "_R" + str(int( 100 + r ))[1:]
@@ -91,12 +99,23 @@ for r in ss:
     
 
     # vi = 128
-    vi = int( int( 3/ps )*4 )
+    vi = int( int( ws/ps )*4 )
     it = 3
     # bordes_extra = 10 # px
     bordes_extra = int(np.round(vi/12))
     if r == 6 or r == 22 or r == 25:
-        bordes_extra = int(np.round(vi/9))
+        bordes_extra = int(1/ps)
+        
+    if r == 1 or r == 4 or r == 8 or r == 14 or r == 15 or r == 17 or r == 18:
+        delta = 4
+        if r == 1 or r == 17:
+            delta = 6
+        pre_profundo = stack_pre[ pre10[r-1] + delta ]
+        post_profundo = correct_driff( stack_post[ post10[r-1] + delta ], pre_profundo, 50 )
+        sat = busca_manchas(pre, 700)
+        pre = pre*(1-sat) + pre_profundo*sat
+        post = post*(1-sat) + post_profundo*sat    
+    
 
     Noise_for_NMT = 0.2
     Threshold_for_NMT = 2.5
@@ -125,56 +144,33 @@ for r in ss:
     wind = vi/( 2**(it-1) )
     d = int( ( resolution - len(Y_nmt)*wind )/2   )
 
-    # Add the scale bar
-    scale_bar_length = int(scale_pixels / plt.rcParams['figure.dpi'])  # Convert scale length to figure units
-    start_x = d + 50  # Starting x-coordinate of the scale bar
-    start_y = resolution - ( 2*wind ) + 10# Starting y-coordinate of the scale bar
 
-    plt.figure(figsize=(20,20), tight_layout=True)
+    plt.figure(figsize=(7,7), layout='compressed')
 
     plt.subplot(2,2,1)
     plt.imshow( celula_pre , cmap = 'gray' )
-    plt.xticks([])
-    plt.yticks([])
-    for i in range(20):
-        plt.plot([start_x, start_x + scale_pixels], [start_y + i - 10, start_y + i - 10], color='black', linewidth = 1)
-    plt.text(start_x + scale_pixels/2, start_y-25, f'{scale_length} {scale_unit}', color='black', weight='bold', ha='center', fontsize = "xx-large")
+    barra_de_escala( 20, pixel_size = ps,  sep = 1.5,  font_size = fs, color = 'w', more_text = str(name) )
 
     plt.subplot(2,2,2)
     plt.imshow(np.zeros(pre.shape), cmap = ListedColormap([(1,1,1)]))
     plt.imshow( mascara, cmap = cm3, alpha = 0.6 )
     plt.quiver(x,y,X_nmt,-Y_nmt, scale = scale0, pivot='tail')
-    for i in range(20):
-        plt.plot([start_x, start_x + scale_pixels], [start_y + i - 10, start_y + i - 10], color='black', linewidth = 1)
-    plt.xticks([])
-    plt.yticks([])
-    plt.xlim([0,resolution])
-    plt.ylim([resolution,0])
-    # plt.imshow( celula_post , cmap = 'gray' )
-    # plt.xticks([])
-    # plt.yticks([])
-    # for i in range(20):
-    #     plt.plot([start_x, start_x + scale_pixels], [start_y + i - 10, start_y + i - 10], color='black', linewidth = 1)
+    barra_de_escala( 20, pixel_size = ps,  sep = 1.5,  font_size = fs, color = 'k', text = False )
+
 
     plt.subplot(2,2,3)
     plt.imshow( np.zeros(pre.shape), cmap = cm0 )
-    plt.imshow( pre_plot, cmap = cm1, vmin = 0, vmax = 250, alpha = 1)
-    plt.imshow( post_plot, cmap = cm2, vmin = 0, vmax = 250, alpha = 0.5)
-    plt.xticks([])
-    plt.yticks([])
-    for i in range(20):
-        plt.plot([start_x, start_x + scale_pixels], [start_y + i - 10, start_y + i - 10], color='white', linewidth = 1)
+    plt.imshow( pre_plot, cmap = cm_crimson, vmin = 0, vmax = 250, alpha = 1)
+    plt.imshow( post_plot, cmap = cm_green, vmin = 0, vmax = 250, alpha = 0.5)
+    barra_de_escala( 20, pixel_size = ps,  sep = 1.5,  font_size = fs, color = 'w', text = False )
+
 
     plt.subplot(2,2,4)
     plt.imshow(np.zeros(pre.shape), cmap = ListedColormap([(1,1,1)]))
     plt.imshow( mascara, cmap = cm3, alpha = 0.6 )
     plt.quiver(x,y,X_s,-Y_s, scale = scale0, pivot='tail')
-    for i in range(20):
-        plt.plot([start_x, start_x + scale_pixels], [start_y + i - 10, start_y + i - 10], color='black', linewidth = 1)
-    plt.xticks([])
-    plt.yticks([])
-    plt.xlim([0,resolution])
-    plt.ylim([resolution,0])
+    barra_de_escala( 20, pixel_size = ps,  sep = 1.5,  font_size = fs, color = 'k', text = False )
+
 
     plt.show()
 
@@ -269,13 +265,10 @@ data["DS20"] = DSdefo20
 data["M20"] = Mdefo20
 
 data["Area"] = area
-data["Clase"] = ["MCF10SS"]*len(cel )
+data["Clase"] = ["MCF10CS"]*len(cel )
 
 
-data.to_csv( "data_MCF10SS.csv" )
-
-
-
+data.to_csv( "data_MCF10CS.csv" )
 
 
 
@@ -298,9 +291,15 @@ data.to_csv( "data_MCF10SS.csv" )
 
 
 
+#%%
+def busca_manchas(img, th = 800):
+    sat = np.zeros([1024]*2)
+    sat[ pre > th ] = 1
+    sat = area_upper(sat, kernel_size = 20, threshold = 0.1)
+    return sat
 
-
-
+manchas = busca_manchas(pre)
+plt.imshow(manchas)
 
 #%% PIV + NMT + Suavizado
 
@@ -309,7 +308,7 @@ data.to_csv( "data_MCF10SS.csv" )
 # post10[0] = 8
 # delta = 5
 
-r = 8
+r = 17
 full_path1 = path + carpetas[ distribucion[r-1] ]
 
 name = carpetas[ distribucion[r-1] ][-3:] + "_R" + str(int( 100 + r ))[1:]
@@ -361,6 +360,16 @@ if r == 4:
     pre = pre*(1-sat) + pre_profundo*sat
     post = post*(1-sat) + post_profundo*sat
 
+if r == 17:
+    delta = 6
+    sat = busca_manchas(pre)
+    pre_profundo = stack_pre[ pre10[r-1] + delta ]
+    post_profundo = correct_driff( stack_post[ post10[r-1] + delta ], pre_profundo, 50 )
+    pre = pre*(1-sat) + pre_profundo*sat
+    post = post*(1-sat) + post_profundo*sat
+
+
+
 
 # vi = 128
 vi = int( int( 3/ps )*4 )
@@ -390,72 +399,36 @@ post_plot = np.copy(post - inf )
 pre_plot[ pre < 0 ] = 0
 post_plot[ post < 0 ] = 0
 
-scale0 = 100
-scale_length = 10  # Length of the scale bar in pixels
-scale_pixels = scale_length/pixel_size
-scale_unit = 'µm'  # Unit of the scale bar
-
-wind = vi/( 2**(it-1) )
-d = int( ( resolution - len(Y_nmt)*wind )/2   )
-
-# Add the scale bar
-scale_bar_length = int(scale_pixels / plt.rcParams['figure.dpi'])  # Convert scale length to figure units
-start_x = d + 50  # Starting x-coordinate of the scale bar
-start_y = resolution -( 2*wind ) + 10# Starting y-coordinate of the scale bar
-
-
-
-plt.figure(figsize=(20,20), tight_layout=True)
-
+plt.figure(figsize=(7,7), layout='compressed')
 
 plt.subplot(2,2,1)
-
 plt.imshow( celula_pre , cmap = 'gray' )
-plt.xticks([])
-plt.yticks([])
-for i in range(20):
-    plt.plot([start_x, start_x + scale_pixels], [start_y + i - 10, start_y + i - 10], color='black', linewidth = 1)
-plt.text(start_x + scale_pixels/2, start_y-25, f'{scale_length} {scale_unit}', color='black', weight='bold', ha='center', fontsize = "xx-large")
-
+barra_de_escala( 20, pixel_size = ps,  sep = 1.5,  font_size = fs, color = 'w', more_text = str(name) )
 
 plt.subplot(2,2,2)
-
-plt.imshow( celula_post , cmap = 'gray' )
-plt.xticks([])
-plt.yticks([])
-for i in range(20):
-    plt.plot([start_x, start_x + scale_pixels], [start_y + i - 10, start_y + i - 10], color='black', linewidth = 1)
-
+plt.imshow(np.zeros(pre.shape), cmap = ListedColormap([(1,1,1)]))
+plt.imshow( mascara, cmap = cm3, alpha = 0.6 )
+plt.quiver(x,y,X_nmt,-Y_nmt, scale = scale0, pivot='tail')
+barra_de_escala( 20, pixel_size = ps,  sep = 1.5,  font_size = fs, color = 'k', text = False )
 
 
 plt.subplot(2,2,3)
 plt.imshow( np.zeros(pre.shape), cmap = cm0 )
-plt.imshow( pre_plot, cmap = cm1, vmin = 0, vmax = 250, alpha = 1)
-plt.imshow( post_plot, cmap = cm2, vmin = 0, vmax = 250, alpha = 0.5)
-plt.xticks([])
-plt.yticks([])
-for i in range(20):
-    plt.plot([start_x, start_x + scale_pixels], [start_y + i - 10, start_y + i - 10], color='white', linewidth = 1)
+plt.imshow( pre_plot, cmap = cm_crimson, vmin = 0, vmax = 250, alpha = 1)
+plt.imshow( post_plot, cmap = cm_green, vmin = 0, vmax = 250, alpha = 0.5)
+barra_de_escala( 20, pixel_size = ps,  sep = 1.5,  font_size = fs, color = 'w', text = False )
 
 
 plt.subplot(2,2,4)
-
 plt.imshow(np.zeros(pre.shape), cmap = ListedColormap([(1,1,1)]))
-plt.imshow( mascara, cmap = "Reds", alpha = 0.4 )
+plt.imshow( mascara, cmap = cm3, alpha = 0.6 )
 plt.quiver(x,y,X_s,-Y_s, scale = scale0, pivot='tail')
-# plt.quiver(x,y,X_nmt,-Y_nmt, scale = scale0, pivot='tail')
+barra_de_escala( 20, pixel_size = ps,  sep = 1.5,  font_size = fs, color = 'k', text = False )
 
-# plt.plot([start_x+20, start_x + scale_pixels-20], [start_y-25, start_y-25], color='white', linewidth = 40)
-for i in range(20):
-    plt.plot([start_x, start_x + scale_pixels], [start_y + i - 10, start_y + i - 10], color='black', linewidth = 1)
 
-plt.xticks([])
-plt.yticks([])
-plt.xlim([0,resolution])
-plt.ylim([resolution,0])
+plt.show()
 
 # plt.savefig(name + '_figura.png')
-plt.show()
 
 
 # c_pre_a = np.reshape( celula, (1, 1, *pre.shape)  )

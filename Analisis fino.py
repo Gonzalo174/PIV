@@ -9,6 +9,9 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 from scipy.optimize import curve_fit as cf
+from scipy.stats import ttest_ind as ttest
+from scipy.stats import ranksums
+
 #%%
 plt.rcParams['figure.figsize'] = [13,8]
 plt.rcParams['font.size'] = 22
@@ -16,7 +19,7 @@ plt.rcParams['font.size'] = 22
 plt.rcParams['font.family'] = "Yu Gothic"
 #%%
 
-df = pd.read_csv( "celulas 28.10.csv", index_col = 'Celula')
+df = pd.read_csv( r"C:\Users\gonza\1\Tesis\PIV\celulas 23.11.csv", index_col = 'Celula')
 # grupo = df.loc[ df["Clase"] == 'MCF7CS' ]
 df["N"] = np.arange(len(df)) + 1
 df["N10"] = df["S10"]/df["Area"]
@@ -56,16 +59,85 @@ plt.grid( True )
 
 
 #%%
-
 key = 'P10'
-plt.figure( figsize = [5,5] )
-sns.boxplot( [ df.loc[ df["Clase"] == 'MCF10CS' ][key].values, df.loc[ df["Clase"] == 'MCF10SS' ][key].values, df.loc[ df["Clase"] == 'MCF7CS' ][key].values, df.loc[ df["Clase"] == 'MCF7SS' ][key].values ]  )
+conjuntos = [ df.loc[ df["Clase"] == 'MCF10CS' ][key].values, df.loc[ df["Clase"] == 'MCF10SS' ][key].values, df.loc[ df["Clase"] == 'MCF7CS' ][key].values, df.loc[ df["Clase"] == 'MCF7SS' ][key].values ]
+plt.rcParams['font.size'] = 11
+
+plt.figure( figsize = [6,3] )
+sns.boxplot(  conjuntos, color = colores[0]  )
 plt.grid(True)
-plt.xticks([0,1,2,3], ['10CS','10SS','7CS','7SS'] )
+plt.xticks([0,1,2,3], ['']*4)#['10CS','10SS','7CS','7SS'] )
+delta0 = 0.05
+plt.text(0-delta0, -0.05, 'MCF10', rotation=90, va='top', ha='center', color='k', fontsize=11)
+plt.text(0+delta0, -0.05, 'con suero', rotation=90, va='top', ha='center', color='k', fontsize=11)
+plt.text(1-delta0, -0.05, 'MCF10', rotation=90, va='top', ha='center', color='k', fontsize=11)
+plt.text(1+delta0, -0.05, 'sin suero', rotation=90, va='top', ha='center', color='k', fontsize=11)
+plt.text(2-delta0, -0.05, 'MCF7', rotation=90, va='top', ha='center', color='k', fontsize=11)
+plt.text(2+delta0, -0.05, 'con suero', rotation=90, va='top', ha='center', color='k', fontsize=11)
+plt.text(3-delta0, -0.05, 'MCF7', rotation=90, va='top', ha='center', color='k', fontsize=11)
+plt.text(3+delta0, -0.05, 'sin suero', rotation=90, va='top', ha='center', color='k', fontsize=11)
+
 # plt.xticks([0,1,2,3], ['MCF7SS','MCF7CS','MCF10SS','MCF10CS'])
 plt.ylabel( "Deformación promedio [µm]" )
-plt.ylim([-0.01,0.26])
+# plt.ylim([-0.01,0.26])
 # plt.ylabel( "Deformación/Area [µm]" )
+#%%
+con = 3
+print( ttest( conjuntos[con],conjuntos[0]) )
+print( ttest( conjuntos[con],conjuntos[1]) )
+print( ttest( conjuntos[con],conjuntos[2]) )
+print( ttest( conjuntos[con],conjuntos[3]) )
+
+#%%
+con = 2
+print( ranksums( conjuntos[con],conjuntos[0]) )
+print( ranksums( conjuntos[con],conjuntos[1]) )
+print( ranksums( conjuntos[con],conjuntos[2]) )
+print( ranksums( conjuntos[con],conjuntos[3]) )
+
+#%%
+'''
+ttest:
+        10CS    10SS     7CS     7SS
+10CS     1     0.4198  0.3316  7.1e-3
+10SS  0.4198      1    0.6161  1.6e-5
+ 7CS  0.3316   0.6161     1    9.3e-4
+ 7SS  7.1e-3   1.6e-5  9.3e-4     1
+        
+ranksum:
+        10CS    10SS     7CS     7SS
+10CS     1     0.9423  0.5006  1.5e-4
+10SS  0.9423      1    0.4874  5.3e-4
+ 7CS  0.5006   0.4874     1    2.5e-3
+ 7SS  1.5e-4   5.3e-4  2.5e-3     1
+
+'''
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 #%%
@@ -164,7 +236,7 @@ data = pd.concat( [ss7, cs7, ss10, cs10] )
 data = data.drop( 'Unnamed: 0', axis = 1 )
 data = data.set_index('Celula')
 
-data.to_csv( "celulas 28.10.csv" )
+data.to_csv( "celulas 23.11.csv" )
 
 
 

@@ -150,7 +150,7 @@ modo = "Smooth5"
 mapas = False
 suave0 = 3
 
-dominio, deformacion = n_iterations( pre, post, vi, it, exploration = bordes_extra, mode = modo)
+dominio, deformacion = n_iterations( pre, post, vi, it, exploration = bordes_extra, mode = modo, A = 0.8)
 Y_nmt, X_nmt, res = nmt(*deformacion, Noise_for_NMT, Threshold_for_NMT)
 X_s, Y_s = smooth(X_nmt,suave0), smooth(Y_nmt, suave0)
 # mascara = 1 - iio.imread( "mascara_3.png" )
@@ -209,8 +209,8 @@ plt.ylim([resolution,0])
 
 plt.subplot(1,3,3)
 plt.imshow( np.zeros(pre.shape), cmap = cm0 )
-plt.imshow( pre_plot, cmap = cm1, vmin = 0, vmax = 200, alpha = 1)
-plt.imshow( post_plot, cmap = cm2, vmin = 0, vmax = 200, alpha = 0.5)
+plt.imshow( pre_plot, cmap = cm1, vmin = 0, vmax = 170, alpha = 1)
+plt.imshow( post_plot, cmap = cm2, vmin = 0, vmax = 170, alpha = 0.5)
 plt.xticks([])
 plt.yticks([])
 for i in range(20):

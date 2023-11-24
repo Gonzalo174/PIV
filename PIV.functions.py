@@ -9,8 +9,9 @@ import numpy as np
 from scipy import signal
 from scipy.optimize import curve_fit
 
-def busca_esferas( img, ps = 0.1007, win = 3, th = 1 ):
-    std_img = np.std( img )
+def busca_esferas( img, ps = 0.1007, win = 3, th = 1, std_img = 0 ):
+    if std_img == 0:
+        std_img = np.std( img )
     
     ws = int( np.round( win/ps ) )
     l = int( len(img)/ws )
@@ -26,6 +27,11 @@ def busca_esferas( img, ps = 0.1007, win = 3, th = 1 ):
     
     return win_with_sph, int(ws*l)
 
+def busca_manchas(img, th = 1000):
+    sat = np.zeros([1024]*2)
+    sat[ pre > th ] = 1
+    sat = area_upper(sat, kernel_size = 20, threshold = 0.1)
+    return sat
 
 def barra_de_escala( scale_length, pixel_size = 0.1007, scale_unit = 'µm', loc = 'lower right', sep = 1, img_len = 1000, font_size = "x-large", color = 'white', text = True, more_text = '', a_lot_of_text = '' ):
     scale_pixels = scale_length/pixel_size
@@ -508,16 +514,17 @@ def iteration( img_post0, img_pre0, win_shape, exploration = 10, translation_Y =
                 y, x = -(y0 - exploration), -(x0 - exploration)
                 
                 pre_win_std = np.std( pre_win )
+                post_win_std = np.std( post_bigwin[exploration:-exploration, exploration:-exploration] ) 
                 marca = 'r'
-                if pre_win_std > A*pre_std:
+                if pre_win_std > A*pre_std and post_win_std > A*pre_std:
                     Y[j,i] = y
                     X[j,i] = x
                     marca = 'g'
 
-                # punto = (j,i) 
-                # if punto in control:
-                R = np.sqrt( y**2 + x**2 )
-                if R > 2 and (0,0) in control:
+                punto = (j,i) 
+                if punto in control:
+                # R = np.sqrt( y**2 + x**2 )
+                # if R > 2 and (0,0) in control:
                     plt.figure( tight_layout=True )
                     plt.subplot(2,2,1)
                     plt.imshow( pre_win, cmap = cm_crimson, vmin = 100, vmax = 600 )
@@ -620,7 +627,7 @@ def iteration( img_post0, img_pre0, win_shape, exploration = 10, translation_Y =
     return deformation_map
 
 
-def n_iterations( img_post, img_pre, win_shape_0, iterations = 3, exploration = 1000, mode = "Default", A = 0.9, control = [(-1,-1)]):
+def n_iterations( img_post, img_pre, win_shape_0, iterations = 3, exploration = 1000, mode = "Default", A = 0.85, control = [(-1,-1)]):
     """
     Parameters
     ----------
@@ -725,7 +732,7 @@ def nmt(Y_, X_, noise, threshold, mode = "Mean"):
                 result[j,i] = 1
 
     if mode == "Mean":
-        # lo cambio por el promedio, despues tengo que averiguar/preguntar bien
+        # lo cambio por el promedio
         for j in range(1, l-1):
             for i in range(1, l-1):
                 if result[j,i] == 1:
@@ -784,6 +791,7 @@ def Z_iteration0( stack_post0, img_pre0, win_shape, exploration = 1, translation
     
     if z0 == 0:
         img_post, ZYX = correct_driff_3D( stack_post, img_pre, 50, info = True)
+        z0 = ZYX[0]
     else:
         img_post = correct_driff( stack_post[ z0 ], img_pre, 50)
 
@@ -810,60 +818,58 @@ def Z_iteration0( stack_post0, img_pre0, win_shape, exploration = 1, translation
             
             pre_win = img_pre[ Ay_pre : By_pre, Ax_pre : Bx_pre ]
             
-            if j == j_p and i == i_p:
-                plt.figure( tight_layout=True )
-                plt.subplot(2,2,1)
-                plt.imshow( pre_win, cmap = cm_crimson, vmin = 100, vmax = 600 )
-                plt.xticks([])
-                plt.yticks([])
+            # if j == j_p and i == i_p:
+            #     plt.figure( tight_layout=True )
+            #     plt.subplot(2,2,1)
+            #     plt.imshow( pre_win, cmap = cm_crimson, vmin = 100, vmax = 600 )
+            #     plt.xticks([])
+            #     plt.yticks([])
                 
-            max_corr = np.zeros(3)
-            
-            if z0 == 0:
-                z0 = ZYX[0]
-                
+            max_corr = []
+
             for k in range(-1,2,1):
                 post_bigwin = stack_post[ z0 + k , Ay_post : By_post, Ax_post : Bx_post ]
                 cross_corr = signal.correlate(post_bigwin - post_bigwin.mean(), pre_win - pre_win.mean(), mode = 'valid', method = "fft") 
 
-                if j == j_p and i == i_p:
-                    plt.subplot(2,2,k+3)
-                    plt.imshow( post_bigwin[exploration:-exploration,exploration:-exploration], cmap = cm_crimson, vmin = 100, vmax = 600 )
-                    plt.xticks([])
-                    plt.yticks([])
+                # if j == j_p and i == i_p:
+                #     plt.subplot(2,2,k+3)
+                #     plt.imshow( post_bigwin[exploration:-exploration,exploration:-exploration], cmap = cm_crimson, vmin = 100, vmax = 600 )
+                #     plt.xticks([])
+                #     plt.yticks([])
                     
                 if mode[:-1] == "Smooth" or mode == "Smooth":
                     ks = 3
                     if mode[-1] != "h":
                         ks = int(mode[-1])
+                        
                     cross_corr = smooth( cross_corr , ks )
-                    max_corr[k] = np.max( cross_corr )
+                    max_corr.append( np.max( cross_corr ) )
                     
-                Z[j,i]= max_corr.argmax() - 1
+                Z[j,i]= np.array(max_corr).argmax() - 1
                     
                 
-                if mode == "Fit":
-                    # cross_corr = smooth( cross_corr , 3 )
-                    y0, x0 = np.unravel_index( cross_corr.argmax(), cross_corr.shape )
-                    y, x = -(y0 - exploration), -(x0 - exploration)
-                    yo, xo = -y, -x
+                # if mode == "Fit":
+                #     # cross_corr = smooth( cross_corr , 3 )
+                #     y0, x0 = np.unravel_index( cross_corr.argmax(), cross_corr.shape )
+                #     y, x = -(y0 - exploration), -(x0 - exploration)
+                #     yo, xo = -y, -x
                     
-                    pre_win_std = np.std( pre_win )
-                    if pre_win_std > A*pre_std:
-                        data = cross_corr
-                        u, v = np.meshgrid(np.linspace(-exploration, exploration, 2*exploration+1), np.linspace(-exploration, exploration, 2*exploration+1) )
-                        amplitude0 = np.max(data)-np.min(data)
+                #     pre_win_std = np.std( pre_win )
+                #     if pre_win_std > A*pre_std:
+                #         data = cross_corr
+                #         u, v = np.meshgrid(np.linspace(-exploration, exploration, 2*exploration+1), np.linspace(-exploration, exploration, 2*exploration+1) )
+                #         amplitude0 = np.max(data)-np.min(data)
                         
-                        popt = [amplitude0, xo, yo, 3, 3, 0, np.min(data)]
-                        popt, pcov = curve_fit_pro(gaussian_2d, (u, v), data.ravel(), p0 = popt )
-                        amplitude, xo, yo, sigma_x, sigma_y, theta, offset = popt
+                #         popt = [amplitude0, xo, yo, 3, 3, 0, np.min(data)]
+                #         popt, pcov = curve_fit_pro(gaussian_2d, (u, v), data.ravel(), p0 = popt )
+                #         amplitude, xo, yo, sigma_x, sigma_y, theta, offset = popt
                         
-                        Y[j,i] = -yo
-                        X[j,i] = -xo
+                #         Y[j,i] = -yo
+                #         X[j,i] = -xo
                         
-                        max_corr[k] = amplitude - offset
+                #         max_corr[k] = amplitude - offset
                     
-                    Z[j,i]= max_corr.argmax() - 1
+                #     Z[j,i]= np.array(max_corr).argmax() - 1
                     
     return Z
 

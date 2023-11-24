@@ -20,6 +20,14 @@ plt.rcParams['figure.figsize'] = [10,10]
 plt.rcParams['font.size'] = 16
 plt.rcParams['font.family'] = "Times New Roman"
 
+cm_crimson = ListedColormap( [(220*i/(999*255),20*i/(999*255),60*i/(999*255)) for i in range(1000)] )
+cm_green = ListedColormap( [(0,128*i/(999*255),0) for i in range(1000)] )
+cm_yellow = ListedColormap( [( (220*i/(999*255)),128*i/(999*255),0) for i in range(1000)] )
+cm_y = ListedColormap( [(1, 1, 1), (1, 1, 0)] )   # Blanco - Amarillo
+cm_ar = ListedColormap( [(0.122, 0.467, 0.706), (1, 1, 1), (0.839, 0.152, 0.157)] ) 
+cm_aa = ListedColormap( [(0.122, 0.467, 0.706), (1, 1, 1), (1.000, 0.498, 0.055)] ) 
+cm_aa2 = ListedColormap( [(0.122, 0.467, 0.706), (0, 0, 0), (1.000, 0.498, 0.055)] ) 
+
 cm0 = ListedColormap( [(0, 0, 0), (0, 0, 0)] )               # Negro
 cm1 = ListedColormap( [(i/999,0,0) for i in range(1000)] )   # Negro - Rojo
 cm2 = ListedColormap( [(1,i/999,0) for i in range(1000)] )   # Negro - Verde
@@ -35,6 +43,9 @@ ss =  [ (8,2), (8,3), (7,1), (7,2), (6,2), (6,3), (6,4), (5,4), (4,1), (3,3) ]
 pre_post7 = {(11,2):(6,5), (11,3):(4,3), (11,4):(4,4), (10,1):(4,3), (10,2):(8,4), (10,5):(4,4), (9,1):(3,3), (1,1):(6,5),    (8,2):(4,4), (8,3):(5,5), (7,1):(6,4), (7,2):(5,4), (6,2):(6,5), (6,3):(5,4), (6,4):(4,5), (5,4):(3,4), (4,1):(7,7), (3,3):(6,6)   }
 
 #%%
+
+ws = 2.5
+
 cel = []
 
 defo00 = []
@@ -59,9 +70,9 @@ DSdefo20 = []
 Mdefo20 = []
 
 area = []
+fs = 'small'
 
-
-for tup in ss:
+for tup in cs:
     print(tup)
     full_path1 = path + carpetas[ tup[0] - 1 ]
 
@@ -76,7 +87,6 @@ for tup in ss:
     zoom = metadata_region["Zoom"].values[0]
     pixel_size = 1/(4.97*zoom)
     ps = pixel_size
-
 
     stack_pre = of.imread( full_path1 + r"\\" + metadata_region.loc[ metadata_region["Tipo"] == 'PRE' ]["Archivo"].values[0]+".oif" )[0]
     stack_post = of.imread( full_path1 + r"\\" + metadata_region.loc[ metadata_region["Tipo"] == 'POST' ]["Archivo"].values[-1]+".oif" )[0]
@@ -104,18 +114,16 @@ for tup in ss:
         pre_profundo = stack_pre[ pre_post7[tup][0] + delta ]
         post_profundo = correct_driff( stack_post[ pre_post7[tup][1] + delta ], pre_profundo, 50 )
         
-        sat = np.zeros([1024]*2)
-        sat[ pre > 1000 ] = 1
-        sat = area_upper(sat, kernel_size = 20, threshold = 0.1)
+        sat = busca_manchas(pre)
         
         pre = pre*(1-sat) + pre_profundo*sat
         post = post*(1-sat) + post_profundo*sat
 
     # vi = 128
-    vi = int( int( 3/ps )*4 )
+    vi = int( int( ws/ps )*4 )
     it = 3
     # bordes_extra = 10 # px
-    bordes_extra = int(np.round(vi/9))
+    bordes_extra = int( 0.7/ps )
 
     Noise_for_NMT = 0.2
     Threshold_for_NMT = 2.5
@@ -149,42 +157,27 @@ for tup in ss:
     start_x = d + 50  # Starting x-coordinate of the scale bar
     start_y = resolution - ( 2*wind ) + 10# Starting y-coordinate of the scale bar
 
-    plt.figure(figsize=(20,20), tight_layout=True)
+    plt.figure(figsize=(7,7), layout='compressed')
 
     plt.subplot(2,2,1)
     plt.imshow( celula_pre , cmap = 'gray' )
-    plt.xticks([])
-    plt.yticks([])
-    for i in range(20):
-        plt.plot([start_x, start_x + scale_pixels], [start_y + i - 10, start_y + i - 10], color='black', linewidth = 1)
-    plt.text(start_x + scale_pixels/2, start_y-25, f'{scale_length} {scale_unit}', color='black', weight='bold', ha='center', fontsize = "xx-large")
+    barra_de_escala( 20, pixel_size = ps, sep = 1.5,  font_size = fs, color = 'w' )
 
     plt.subplot(2,2,2)
     plt.imshow( celula_post , cmap = 'gray' )
-    plt.xticks([])
-    plt.yticks([])
-    for i in range(20):
-        plt.plot([start_x, start_x + scale_pixels], [start_y + i - 10, start_y + i - 10], color='black', linewidth = 1)
+    barra_de_escala( 20, pixel_size = ps,  sep = 1.5,  font_size = fs, color = 'w', text = False )
 
     plt.subplot(2,2,3)
     plt.imshow( np.zeros(pre.shape), cmap = cm0 )
-    plt.imshow( pre_plot, cmap = cm1, vmin = 0, vmax = 250, alpha = 1)
-    plt.imshow( post_plot, cmap = cm2, vmin = 0, vmax = 250, alpha = 0.5)
-    plt.xticks([])
-    plt.yticks([])
-    for i in range(20):
-        plt.plot([start_x, start_x + scale_pixels], [start_y + i - 10, start_y + i - 10], color='white', linewidth = 1)
+    plt.imshow( pre_plot, cmap = cm_crimson, vmin = 0, vmax = 400, alpha = 1)
+    plt.imshow( post_plot, cmap = cm_green, vmin = 0, vmax = 400, alpha = 0.5)
+    barra_de_escala( 20, pixel_size = ps,  sep = 1.5,  font_size = fs, color = 'w', text = False )
 
     plt.subplot(2,2,4)
     plt.imshow(np.zeros(pre.shape), cmap = ListedColormap([(1,1,1)]))
     plt.imshow( mascara, cmap = cm3, alpha = 0.6 )
     plt.quiver(x,y,X_s,-Y_s, scale = scale0, pivot='tail')
-    for i in range(20):
-        plt.plot([start_x, start_x + scale_pixels], [start_y + i - 10, start_y + i - 10], color='black', linewidth = 1)
-    plt.xticks([])
-    plt.yticks([])
-    plt.xlim([0,resolution])
-    plt.ylim([resolution,0])
+    barra_de_escala( 20, pixel_size = ps,  sep = 1.5,  font_size = fs, color = 'k', text = False )
 
     plt.show()
 
@@ -279,10 +272,10 @@ data["DS20"] = DSdefo20
 data["M20"] = Mdefo20
 
 data["Area"] = area
-data["Clase"] = ["MCF7SS"]*len(cel )
+data["Clase"] = ["MCF7CS"]*len(cel )
 
 
-data.to_csv( "data_MCF7SS.csv" )
+data.to_csv( "data_MCF7CS.csv" )
 
 
 
@@ -291,7 +284,7 @@ data.to_csv( "data_MCF7SS.csv" )
 # pre_post7.update({(1,1):(8,7)})
 # pre_post7.update({(1,1):(6,5)})
 
-tup = (7,2)
+tup = (1,1)
 
 
 print(tup)
@@ -331,14 +324,11 @@ else:
     post = correct_driff( stack_post[ pre_post7[tup][1] ], pre, 50 )
     
 if tup == (1,1):
-    delta = 3
+    delta = 4
     pre_profundo = stack_pre[ pre_post7[tup][0] + delta ]
     post_profundo = correct_driff( stack_post[ pre_post7[tup][1] + delta ], pre_profundo, 50 )
     
-    sat = np.zeros([1024]*2)
-    sat[ pre > 1000 ] = 1
-    sat = area_upper(sat, kernel_size = 20, threshold = 0.1)
-    
+    sat = busca_manchas(pre)
     pre = pre*(1-sat) + pre_profundo*sat
     post = post*(1-sat) + post_profundo*sat
     
@@ -378,43 +368,27 @@ scale_bar_length = int(scale_pixels / plt.rcParams['figure.dpi'])  # Convert sca
 start_x = d + 50  # Starting x-coordinate of the scale bar
 start_y = resolution - ( 2*wind ) + 10# Starting y-coordinate of the scale bar
 
-plt.figure(figsize=(20,20), tight_layout=True)
+plt.figure(figsize=(7,7), layout='compressed')
 
 plt.subplot(2,2,1)
 plt.imshow( celula_pre , cmap = 'gray' )
-plt.xticks([])
-plt.yticks([])
-for i in range(20):
-    plt.plot([start_x, start_x + scale_pixels], [start_y + i - 10, start_y + i - 10], color='black', linewidth = 1)
-plt.text(start_x + scale_pixels/2, start_y-25, f'{scale_length} {scale_unit}', color='black', weight='bold', ha='center', fontsize = "xx-large")
+barra_de_escala( 20, pixel_size = ps, sep = 1.5,  font_size = fs, color = 'w' )
 
 plt.subplot(2,2,2)
 plt.imshow( celula_post , cmap = 'gray' )
-plt.xticks([])
-plt.yticks([])
-for i in range(20):
-    plt.plot([start_x, start_x + scale_pixels], [start_y + i - 10, start_y + i - 10], color='black', linewidth = 1)
+barra_de_escala( 20, pixel_size = ps,  sep = 1.5,  font_size = fs, color = 'w', text = False )
 
 plt.subplot(2,2,3)
 plt.imshow( np.zeros(pre.shape), cmap = cm0 )
-plt.imshow( pre_plot, cmap = cm1, vmin = 0, vmax = 250, alpha = 1)
-plt.imshow( post_plot, cmap = cm2, vmin = 0, vmax = 250, alpha = 0.5)
-plt.xticks([])
-plt.yticks([])
-for i in range(20):
-    plt.plot([start_x, start_x + scale_pixels], [start_y + i - 10, start_y + i - 10], color='white', linewidth = 1)
+plt.imshow( pre_plot, cmap = cm_crimson, vmin = 0, vmax = 250, alpha = 1)
+plt.imshow( post_plot, cmap = cm_green, vmin = 0, vmax = 250, alpha = 0.5)
+barra_de_escala( 20, pixel_size = ps,  sep = 1.5,  font_size = fs, color = 'w', text = False )
 
 plt.subplot(2,2,4)
 plt.imshow(np.zeros(pre.shape), cmap = ListedColormap([(1,1,1)]))
-plt.imshow( mascara, cmap = cm_B, alpha = 0.6 )
-
+plt.imshow( mascara, cmap = cm3, alpha = 0.6 )
 plt.quiver(x,y,X_s,-Y_s, scale = scale0, pivot='tail')
-for i in range(20):
-    plt.plot([start_x, start_x + scale_pixels], [start_y + i - 10, start_y + i - 10], color='black', linewidth = 1)
-plt.xticks([])
-plt.yticks([])
-plt.xlim([0,resolution])
-plt.ylim([resolution,0])
+barra_de_escala( 20, pixel_size = ps,  sep = 1.5,  font_size = fs, color = 'k', text = False )
 
 plt.show()
 

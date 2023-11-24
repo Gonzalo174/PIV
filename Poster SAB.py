@@ -116,6 +116,11 @@ for iterador in range(4):
     # Determinación del campo de deformación
     it = 3
     vi = int( int( 3/ps )*2**(it-1) )
+    bordes_extra = 8
+    Noise_for_NMT = 0.2
+    Threshold_for_NMT = 2.5
+    modo = "Smooth3"
+    suave0 = 3
 
     dominio, deformacion = n_iterations( post, pre, vi, it, exploration = bordes_extra, mode = modo, A = 0.8)
     Y_nmt, X_nmt, res = nmt(*deformacion, Noise_for_NMT, Threshold_for_NMT)
@@ -133,8 +138,9 @@ for iterador in range(4):
     listay.append( y )
 
 #%%
-esc = 25
-fs = 'medium'
+esc = 20
+separacion = 1.5
+fs = 'x-small'
 plt.figure( figsize = [5, 11] )
 plt.subplots_adjust(wspace=0.04, hspace=0.0005) 
 cel = 2
@@ -143,8 +149,8 @@ celula_pre, b, mascara, mascara10, X_s, Y_s, x, y = celulas[cel], bordes[cel], m
 plt.subplot(4,2,1)
 
 plt.imshow( celula_pre, cmap = 'gray' )
-plt.plot( b[1] ,b[0], c = 'w'  )
-barra_de_escala( esc, pixel_size = ps, img_len = 990,  sep = 3,  font_size = fs, color = 'w' )
+plt.plot( b[1] ,b[0], c = 'w', ls = 'dashed', lw = 0.75  )
+barra_de_escala( esc, pixel_size = ps_list[cel], img_len = 990,  sep = separacion,  font_size = fs, color = 'w' )
 
 plt.subplot(4,2,2)
 
@@ -152,7 +158,7 @@ scale0 = 100
 plt.imshow( mascara, cmap = color_maps[0], alpha = 0.5 )
 plt.imshow( mascara10, cmap = color_maps[0], alpha = 0.5 )
 plt.quiver(x,y,X_s,-Y_s, scale = scale0, pivot='tail')
-barra_de_escala( esc, pixel_size = ps, sep = 3, img_len = 990,  font_size = fs, color = 'k', text = False  )
+barra_de_escala( esc, pixel_size = ps_list[cel], sep = separacion, img_len = 990,  font_size = fs, color = 'k', text = False  )
 plt.xlim([0,1023])
 plt.ylim([1023,0])
 
@@ -163,8 +169,8 @@ celula_pre, b, mascara, mascara10, X_s, Y_s, x, y = celulas[cel], bordes[cel], m
 plt.subplot(4,2,3)
 
 plt.imshow( celula_pre, cmap = 'gray' )
-plt.plot( b[1] ,b[0], c = 'w'  )
-barra_de_escala( esc, pixel_size = ps, img_len = 990,  sep = 3,  font_size = fs, color = 'w' )
+plt.plot( b[1] ,b[0], c = 'w', ls = 'dashed', lw = 0.75    )
+barra_de_escala( esc, pixel_size = ps_list[cel], img_len = 990,  sep = separacion,  font_size = fs, color = 'w' )
 
 plt.subplot(4,2,4)
 
@@ -172,7 +178,7 @@ scale0 = 100
 plt.imshow( mascara, cmap = color_maps[0], alpha = 0.5 )
 plt.imshow( mascara10, cmap = color_maps[0], alpha = 0.5 )
 plt.quiver(x,y,X_s,-Y_s, scale = scale0, pivot='tail')
-barra_de_escala( esc, pixel_size = ps, img_len = 990, sep = 3,  font_size = fs, color = 'k', text = False  )
+barra_de_escala( esc, pixel_size = ps_list[cel], img_len = 990, sep = separacion,  font_size = fs, color = 'k', text = False  )
 plt.xlim([0,1023])
 plt.ylim([1023,0])
 
@@ -184,8 +190,8 @@ celula_pre, b, mascara, mascara10, X_s, Y_s, x, y = celulas[cel], bordes[cel], m
 plt.subplot(4,2,5)
 
 plt.imshow( celula_pre, cmap = 'gray' )
-plt.plot( b[1] ,b[0], c = 'w'  )
-barra_de_escala( esc, pixel_size = ps, img_len = 990,  sep = 3,  font_size = fs, color = 'w' )
+plt.plot( b[1] ,b[0], c = 'w', ls = 'dashed', lw = 0.75    )
+barra_de_escala( esc, pixel_size = ps_list[cel], img_len = 990,  sep = separacion,  font_size = fs, color = 'w' )
 
 plt.subplot(4,2,6)
 
@@ -193,7 +199,7 @@ scale0 = 100
 plt.imshow( mascara, cmap = color_maps[0], alpha = 0.5 )
 plt.imshow( mascara10, cmap = color_maps[0], alpha = 0.5 )
 plt.quiver(x,y,X_s,-Y_s, scale = scale0, pivot='tail')
-barra_de_escala( esc, pixel_size = ps, img_len = 990, sep = 3,  font_size = fs, color = 'k', text = False  )
+barra_de_escala( esc, pixel_size = ps_list[cel], img_len = 990, sep = separacion,  font_size = fs, color = 'k', text = False  )
 plt.xlim([0,1023])
 plt.ylim([1023,0])
 
@@ -206,8 +212,8 @@ celula_pre, b, mascara, mascara10, X_s, Y_s, x, y = celulas[cel], bordes[cel], m
 plt.subplot(4,2,7)
 
 plt.imshow( celula_pre, cmap = 'gray' )
-plt.plot( b[1] ,b[0], c = 'w'  )
-barra_de_escala( esc, pixel_size = ps, img_len = 990,  sep = 3,  font_size = fs, color = 'w' )
+plt.plot( b[1] ,b[0], c = 'w', ls = 'dashed' , lw = 0.75   )
+barra_de_escala( esc, pixel_size = ps_list[cel], img_len = 990,  sep = separacion,  font_size = fs, color = 'w' )
 
 plt.subplot(4,2,8)
 
@@ -215,7 +221,7 @@ scale0 = 100
 plt.imshow( mascara, cmap = color_maps[0], alpha = 0.5 )
 plt.imshow( mascara10, cmap = color_maps[0], alpha = 0.5 )
 plt.quiver(x,y,X_s,-Y_s, scale = scale0, pivot='tail')
-barra_de_escala( esc, pixel_size = ps, img_len = 990, sep = 3,  font_size = fs, color = 'k', text = False  )
+barra_de_escala( esc, pixel_size = ps_list[cel], img_len = 990, sep = separacion,  font_size = fs, color = 'k', text = False  )
 plt.xlim([0,1023])
 plt.ylim([1023,0])
 
@@ -471,25 +477,25 @@ a = np.mean( stack_pre[5] )/np.mean( stack_post[5] )
 plt.subplots_adjust(wspace=0.001, hspace=0.03)
 plt.subplot(2,2,1)
 plt.imshow(celula_pre - fondo_pre, cmap = "gray")
-plt.plot( b[1], b[0], c = 'w' )
-barra_de_escala( 20, pixel_size = ps, sep = 2.5,  font_size = fs, color = 'k', more_text = 'PRE' )
+plt.plot( b[1], b[0], c = 'w', ls = 'dashed', lw = 0.75  )
+barra_de_escala( 20, pixel_size = ps, sep = 2,  font_size = fs, color = 'k', more_text = 'PRE' )
 
 plt.subplot(2,2,2)
 plt.imshow(celula_post - fondo_post, cmap = "gray")
-circle = plt.Circle((410, 495), 130, color='w', lw = 2, fill=False)
+circle = plt.Circle((410, 495), 130, color='w', ls = 'dashed', lw = 0.75 , fill=False)
 plt.gca().add_patch(circle)
-barra_de_escala( 20, pixel_size = ps, sep = 2.5,  font_size = fs, color = 'k', more_text = 'POST', text = False )
+barra_de_escala( 20, pixel_size = ps, sep = 2,  font_size = fs, color = 'k', more_text = 'POST', text = False )
 
 plt.subplot(2,2,3)
 plt.imshow( stack_pre[5], cmap = cm_crimson, vmin = 150, vmax = 500 )
-plt.plot( b[1], b[0], c = 'w' )
-barra_de_escala( 20, pixel_size = ps, sep = 2.5,  font_size = fs, color = 'w', text = False)
+plt.plot( b[1], b[0], c = 'w', ls = 'dashed', lw = 0.75  )
+barra_de_escala( 20, pixel_size = ps, sep = 2,  font_size = fs, color = 'w', text = False)
 plt.text(512, 40, 'DEFORMED SUBSTRATE', color='w', weight='bold', ha='center', va = 'top', fontsize = fs1 )
 
 plt.subplot(2,2,4)
 plt.imshow( stack_post[5], cmap = cm_crimson, vmin = 150, vmax = 500/(a + 0.1) )
-plt.plot( b[1], b[0], c = 'w' )
-barra_de_escala( 20, pixel_size = ps, sep = 2.5,  font_size = fs, color = 'w', text = False )
+# plt.plot( b[1], b[0], c = 'w' )
+barra_de_escala( 20, pixel_size = ps, sep = 2,  font_size = fs, color = 'w', text = False )
 plt.text(512, 40, 'RELAXED SUBSTRATE', color='w', weight='bold', ha='center', va = 'top', fontsize = fs1 )
 
 plt.show()
@@ -514,25 +520,25 @@ X_s, Y_s = smooth(X_nmt,suave0), smooth(Y_nmt, suave0)
 x, y = dominio
 
 #%%
-fs = 'large'
+fs = 'small'
 
 plt.figure(figsize = [7,7])#, tight_layout = True)
 a = np.mean( pre )/np.mean( post )
 a_x, b_x = 580, 880
 a_y, b_y = 370, 670
 
-xo, yo = 850, 650
+xo, yo = 860, 660
 
 plt.subplots_adjust(wspace=0.03, hspace=0.03)
 plt.subplot(1,3,1)
 plt.imshow(celula_pre - fondo_pre, cmap = "gray")
-plt.plot( b[1], b[0], c = 'w' )
+plt.plot( b[1], b[0], c = 'w', ls = 'dashed', lw = 0.75  )
 # barra_de_escala( 10, pixel_size = ps, img_len = np.abs(a_x - b_x), sep = 0.8,  font_size = fs, color = 'k' )
 plt.xlim([a_x,b_x])
 plt.ylim([b_y,a_y])
 plt.xticks([])
 plt.yticks([])
-for i in np.arange(0, -10, -0.1):
+for i in np.arange(-5, -10, -0.1):
     plt.plot([ xo-124, xo ], [yo + i, yo + i], color='k', linewidth = 2)
 plt.text( xo - 62, yo - 20 , '10 µm', color= 'k', weight='bold', ha='center', va = 'bottom', fontsize = fs )
 
@@ -540,13 +546,13 @@ plt.text( xo - 62, yo - 20 , '10 µm', color= 'k', weight='bold', ha='center', v
 plt.subplot(1,3,2)
 plt.imshow( pre, cmap = cm_crimson, vmin = 150, vmax = 400 )
 plt.imshow( post, cmap = cm_green, vmin = 150, vmax = 400/(a + 0.1), alpha = 0.5 )
-plt.plot( b[1], b[0], c = 'w' )
+plt.plot( b[1], b[0], c = 'w', ls = 'dashed', lw = 0.75  )
 # barra_de_escala( 10, pixel_size = ps, img_len = np.abs(a_x - b_x), sep = 0.8,  font_size = fs, color = 'w', text = False)
 plt.xlim([a_x,b_x])
 plt.ylim([b_y,a_y])
 plt.xticks([])
 plt.yticks([])
-for i in np.arange(0, -10, -0.1):
+for i in np.arange(-5, -10, -0.1):
     plt.plot([ xo-124, xo ], [yo + i, yo + i], color='w', linewidth = 2)
 
 plt.subplot(1,3,3)
@@ -557,7 +563,7 @@ plt.xlim([a_x,b_x])
 plt.ylim([b_y,a_y])
 plt.xticks([])
 plt.yticks([])
-for i in np.arange(0, -10, -0.1):
+for i in np.arange(-5, -10, -0.1):
     plt.plot([ xo-124, xo ], [yo + i, yo + i], color='k', linewidth = 2)
 
 plt.show()

@@ -396,11 +396,62 @@ plt.imshow( O4[200:200+int(d60X2),50:50+int(d60X2)], cmap = cm_orange, vmin = 70
 barra_de_escala( 3, pixel_size = ps2, img_len = d60X2-3, sep = 1,  font_size = fs, color = 'w', more_text = '4%' )
 
 
+#%% Todas
+
+lC = 20 # um
+ps = 105.47/1024
+dC = int(lC/ps)
+Vm0 = 600
+fs = 'small'
+sep0 = 0.6
+len0 = 5
+
+plt.figure(figsize = [7,7], layout='constrained')
+
+plt.subplot(3,3,1)
+plt.imshow( C004[300:300+dC,300:300+dC], cmap = cm_crimson, vmin = 150, vmax = Vm0 )
+barra_de_escala( len0, pixel_size = ps, img_len = dC-3, sep = sep0,  font_size = fs, color = 'w', more_text = '0.04%' )
+
+plt.subplot(3,3,2)
+plt.imshow( C02[:dC,:dC], cmap = cm_crimson, vmin = 150, vmax = Vm0 )
+barra_de_escala( len0, pixel_size = ps, img_len = dC-3, sep = sep0,  font_size = fs, color = 'w', more_text = '0.2%' )
+
+l60X = 20 # um
+ps = 212/2048
+d60X = l60X/ps
+
+ps2 = 105.5/1600
+d60X2 = l60X/ps2
+Vm2 = 2000
+
+plt.subplot(3,3,4)
+plt.imshow( O04_60X[200:200+int(d60X),50:50+int(d60X)], cmap = cm_orange, vmin = 70, vmax = Vm2 )
+barra_de_escala( len0, pixel_size = ps, img_len = d60X-3, sep = sep0,  font_size = fs, color = 'w', more_text = '0.04%' )
+
+plt.subplot(3,3,5)
+plt.imshow( O12_60X[200:200+int(d60X),50:50+int(d60X)], cmap = cm_orange, vmin = 70, vmax = Vm2 )
+barra_de_escala( len0, pixel_size = ps, img_len = d60X-3, sep = sep0,  font_size = fs, color = 'w', more_text = '1.2%' )
+
+plt.subplot(3,3,6)
+plt.imshow( O4[200:200+int(d60X2),50:50+int(d60X2)], cmap = cm_orange, vmin = 70, vmax = Vm2 )
+barra_de_escala( len0, pixel_size = ps2, img_len = d60X2-3, sep = sep0,  font_size = fs, color = 'w', more_text = '4%' )
 
 
+l40X = 20 # um
+ps = 316.8/1600
+d40X = l40X/ps
+Vm = 3000
+
+plt.subplot(3,3,7)
+plt.imshow( O04[:int(d40X),:int(d40X)], cmap = cm_orange, vmin = 70, vmax = Vm )
+barra_de_escala( len0, pixel_size = ps, img_len = d40X - 2, sep = sep0,  font_size = fs, color = 'w', more_text = '0.04%' )
 
 
-
+plt.subplot(3,3,8)
+plt.imshow( O12[:int(d40X),:int(d40X)], cmap = cm_orange, vmin = 70, vmax = Vm )
+barra_de_escala( len0, pixel_size = ps, img_len = d40X - 2, sep = sep0,  font_size = fs, color = 'w', more_text = '1.2%' )
+ 
+#%%
 
 
 
@@ -546,6 +597,113 @@ barra_de_escala( 20, pixel_size = ps, img_len = limit - 10, sep = 2.5, more_text
 
 
 plt.show()
+
+
+#%% Todas
+
+ps = 0.1007
+V = 500*0.8
+cm = cm_crimson
+umbral = 0.9
+fs = 'small'
+
+plt.figure(figsize = [7, 7], layout = 'compressed')
+
+pre = C004[:1024, :1024]
+desvios_bin, limit = busca_esferas( pre, th = umbral )
+plt.subplot(3,3,1)
+plt.imshow( pre[ :limit , :limit ], cmap = cm, vmin = 170, vmax = V )
+plt.imshow( desvios_bin, cmap = 'gray', alpha = 0.08, extent = [0,limit,limit,0])
+barra_de_escala( 20, sep = 2.5, more_text = '0.04%', a_lot_of_text = str( int( np.mean( desvios_bin )*100 ) ) + '%', font_size = fs )
+
+pre = C02
+desvios_bin, limit = busca_esferas( pre, th = umbral-0.025 )
+plt.subplot(3,3,2)
+plt.imshow( pre[ :limit , :limit ], cmap = cm, vmin = 170, vmax = V )
+plt.imshow( desvios_bin, cmap = 'gray', alpha = 0.08, extent = [0,limit,limit,0])
+barra_de_escala( 20, sep = 2.5, more_text = '0.2%', a_lot_of_text = str( int( np.mean( desvios_bin )*100 ) ) + '%', font_size = fs )
+
+V = 1000
+cm = cm_orange
+umbral = 0.5
+
+pre = O04_60X[:1024, :1024]
+ps = 0.1007
+desvios_bin, limit = busca_esferas( pre, th = umbral + 0.1 )
+plt.subplot(3,3,4)
+plt.imshow( pre[ :limit , :limit ], cmap = cm, vmin = 100, vmax = 800 )
+plt.imshow( desvios_bin, cmap = 'gray', alpha = 0.09, extent = [0,limit,limit,0])
+barra_de_escala( 20, sep = 2.5, more_text = '0.04%', a_lot_of_text = str( int( np.mean( desvios_bin )*100 ) ) + '%', font_size = fs )
+
+pre = O12_60X[:1024, :1024]
+ps = 0.1007
+desvios_bin, limit = busca_esferas( pre, th = umbral )
+plt.subplot(3,3,5)
+plt.imshow( pre[ :limit , :limit ], cmap = cm, vmin = 100, vmax = 900 )
+plt.imshow( desvios_bin, cmap = 'gray', alpha = 0.09, extent = [0,limit,limit,0])
+barra_de_escala( 20, sep = 2.5, more_text = '1.2%', a_lot_of_text = str( int( np.mean( desvios_bin )*100 ) ) + '%', font_size = fs )
+
+pre = O4
+ps = 105.47/1600
+desvios_bin, limit = busca_esferas( pre, ps, th = umbral )
+plt.subplot(3,3,6)
+plt.imshow( pre[ :limit , :limit ], cmap = cm, vmin = 100, vmax = 900 )
+plt.imshow( desvios_bin, cmap = 'gray', alpha = 0.09, extent = [0,limit,limit,0])
+barra_de_escala( 20, pixel_size = ps, img_len = limit - 35, sep = 2.5, more_text = '4%', a_lot_of_text = str( int( np.mean( desvios_bin )*100 ) ) + '%' , font_size = fs )
+
+
+V = 3000
+cm = cm_orange
+umbral = 0.5
+ps = 316.8/1600
+
+pre = O04[ :int( 100/ps ), :int( 100/ps ) ]
+desvios_bin, limit = busca_esferas( pre, ps, th = umbral + 0.1 )
+plt.subplot(3,3,7)
+plt.imshow( pre[ :limit , :limit ], cmap = cm, vmin = 100, vmax = V*0.8 )
+plt.imshow( desvios_bin, cmap = 'gray', alpha = 0.09, extent = [0,limit,limit,0])
+barra_de_escala( 20, pixel_size = ps, img_len = limit - 10, sep = 2.5, more_text = '0.04%', a_lot_of_text = str( int( np.mean( desvios_bin )*100 ) ) + '%', font_size = fs )
+
+pre = O12[ :int( 100/ps ), :int( 100/ps ) ]
+desvios_bin, limit = busca_esferas( pre, ps, th = umbral )
+plt.subplot(3,3,8)
+plt.imshow( pre[ :limit , :limit ], cmap = cm, vmin = 100, vmax = V )
+plt.imshow( desvios_bin, cmap = 'gray', alpha = 0.09, extent = [0,limit,limit,0])
+barra_de_escala( 20, pixel_size = ps, img_len = limit - 10, sep = 2.5, more_text = '1.2%', a_lot_of_text = str( int( np.mean( desvios_bin )*100 ) ) + '%', font_size = fs )
+
+
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
