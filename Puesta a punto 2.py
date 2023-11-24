@@ -49,7 +49,10 @@ color_maps = [cm0, cm1, cm2, cm3]
 cel = 0
 
 #%% Invocacion
-path = r"C:\Users\gonza\1\Tesis\2023\\"
+l = 1#6
+path = r"D:\\Gonzalo\\"
+# path = r"C:\Users\gonza\1\Tesis\2023\\"
+
 nombres = [ 'MCF7 D30_R04', 'MCF7 C30_R05', 'MCF10 D04_R09', 'MCF10 G18_R25'  ]
 regiones = [ 4, 5, 9, 25 ]
 img_trans = [ 0, 0, 2, 2 ]
@@ -69,14 +72,14 @@ stack_pre = of.imread( full_path + r"\\" + metadata_region.loc[ metadata_region[
 stack_post = of.imread( full_path + r"\\" + metadata_region.loc[ metadata_region["Tipo"] == 'POST' ]["Archivo"].values[-1]+".oif" )[0]
 celula_pre = of.imread( full_path + r"\\" + metadata_region.loc[ metadata_region["Tipo"] == 'PRE' ]["Archivo"].values[0]+".oif" )[1,img_trans[cel]]
 if cel == 0 or cel == 1:
-    mascara =  1 - np.loadtxt( path[:-6] + r"PIV\Mascaras MCF7\\" + nombres[cel][-7:] + "_m_00um.png")
-    mascara10 =  1 - np.loadtxt( path[:-6] + r"PIV\Mascaras MCF7\\" + nombres[cel][-7:] + "_m_10um.png")
-    mascara20 =  1 - np.loadtxt( path[:-6] + r"PIV\Mascaras MCF7\\" + nombres[cel][-7:] + "_m_20um.png")
+    mascara =  1 - np.loadtxt( path[:-l] + r"PIV\Mascaras MCF7\\" + nombres[cel][-7:] + "_m_00um.png")
+    mascara10 =  1 - np.loadtxt( path[:-l] + r"PIV\Mascaras MCF7\\" + nombres[cel][-7:] + "_m_10um.png")
+    mascara20 =  1 - np.loadtxt( path[:-l] + r"PIV\Mascaras MCF7\\" + nombres[cel][-7:] + "_m_20um.png")
 
 elif cel == 2 or cel ==3:
-    mascara =  np.loadtxt( path[:-6] + r"PIV\Mascaras MCF10\\" + nombres[cel][-7:] + "_m_00um.csv")
-    mascara10 =  np.loadtxt( path[:-6] + r"PIV\Mascaras MCF10\\" + nombres[cel][-7:] + "_m_10um.csv")
-    mascara20 =  np.loadtxt( path[:-6] + r"PIV\Mascaras MCF10\\" + nombres[cel][-7:] + "_m_20um.csv")
+    mascara =  np.loadtxt( path[:-l] + r"PIV\Mascaras MCF10\\" + nombres[cel][-7:] + "_m_00um.csv")
+    mascara10 =  np.loadtxt( path[:-l] + r"PIV\Mascaras MCF10\\" + nombres[cel][-7:] + "_m_10um.csv")
+    mascara20 =  np.loadtxt( path[:-l] + r"PIV\Mascaras MCF10\\" + nombres[cel][-7:] + "_m_20um.csv")
 
 b = border(mascara, 600)
 
@@ -93,9 +96,52 @@ barra_de_escala( 10, sep = 2, more_text = 'Célula ' + str(cel), a_lot_of_text =
 print(  np.mean(desvios_bin) )
 
 #%%
+mascara_aptitud = np.zeros([limit]*2)
+aptas = []
+no_aptas = []
+
+for j in range(limit):
+    for i in range(limit):
+        if desvios_bin[ j//int(ws/ps), i//int(ws/ps) ] == 1:
+            mascara_aptitud[j,i] = 1
+            aptas.append( pre[j,i] )
+        else:
+            no_aptas.append( pre[j,i] )
+
+plt.imshow(mascara_aptitud)
+
+#%%
+plt.title("Todas")
+plt.hist(aptas+no_aptas, bins = np.arange(90, 610, 1), density=True)
+plt.ylim([0,0.02])
+plt.show()
+
+#%%
+
+b = np.arange(90, 610, 4)
+todas_dist = np.histogram( pre.flatten(), bins = b, density=True  )
+aptas_dist = np.histogram( aptas, bins = b, density=True  )
+no_aptas_dist = np.histogram( no_aptas, bins = b, density=True  )
+#%%
+plt.plot( b[:-1], todas_dist[0], label = "Imagen completa" )
+plt.plot( b[:-1], aptas_dist[0], label = "Ventanas aptas" )
+plt.plot( b[:-1], no_aptas_dist[0], label = "Ventanas no aptas" )
+plt.legend()
+plt.grid()
+
+#%%
+plt.figure(figsize = [6,4])
+plt.plot( b[:-1], normalizar(todas_dist[0]), label = "Imagen completa" )
+plt.plot( b[:-1], normalizar(aptas_dist[0]), label = "Ventanas aptas" )
+plt.plot( b[:-1], normalizar(no_aptas_dist[0]), label = "Ventanas no aptas" )
+plt.legend()
+plt.grid()
+
+#%%
 cel = 0
-runcell('Invocacion', 'C:/Users/gonza/1/Tesis/PIV/Puesta a punto 2.py')
-# ws = 1
+# runcell('Invocacion', 'C:/Users/gonza/1/Tesis/PIV/Puesta a punto 2.py')
+runcell('Invocacion', 'D:/Gonzalo/PIV/Puesta a punto 2.py')
+ws = 2.5
 it = 3
 vi = int( int( np.round(ws/ps) )*2**(it-1) )
 bordes_extra = 8
@@ -109,7 +155,7 @@ pre = stack_pre[5]
 post, ZYX = correct_driff_3D( stack_post, pre, 20, info = True )
 
 
-dominio, deformacion = n_iterations( post, pre, vi, it, exploration = bordes_extra, mode = modo, A = As[cel], control = control0)
+dominio, deformacion = n_iterations( post, pre, vi, it, exploration = bordes_extra, mode = modo, A = As[cel])
 Y_0, X_0 = deformacion 
 Y_nmt, X_nmt, res = nmt(*deformacion, Noise_for_NMT, Threshold_for_NMT)
 X_s, Y_s = smooth(X_nmt,suave0), smooth(Y_nmt, suave0)
