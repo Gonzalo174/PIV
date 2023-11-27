@@ -485,6 +485,7 @@ def iteration( img_post0, img_pre0, win_shape, exploration = 10, translation_Y =
         translation_X = np.zeros([divis,divis])
         
     pre_std = np.std(img_pre0)
+    post_std = np.std(img_post0)
 
     for j in range(1,divis-1,1):
         for i in range(1,divis-1,1):
@@ -516,7 +517,7 @@ def iteration( img_post0, img_pre0, win_shape, exploration = 10, translation_Y =
                 pre_win_std = np.std( pre_win )
                 post_win_std = np.std( post_bigwin[exploration:-exploration, exploration:-exploration] ) 
                 marca = 'r'
-                if pre_win_std > A*pre_std and post_win_std > A*pre_std:
+                if pre_win_std > A*pre_std and post_win_std > A*post_std:
                     Y[j,i] = y
                     X[j,i] = x
                     marca = 'g'

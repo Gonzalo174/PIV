@@ -49,9 +49,9 @@ color_maps = [cm0, cm1, cm2, cm3]
 cel = 0
 
 #%% Invocacion
-l = 1#6
-path = r"D:\\Gonzalo\\"
-# path = r"C:\Users\gonza\1\Tesis\2023\\"
+l = 6
+# path = r"D:\\Gonzalo\\"
+path = r"C:\Users\gonza\1\Tesis\2023\\"
 
 nombres = [ 'MCF7 D30_R04', 'MCF7 C30_R05', 'MCF10 D04_R09', 'MCF10 G18_R25'  ]
 regiones = [ 4, 5, 9, 25 ]
@@ -83,15 +83,22 @@ elif cel == 2 or cel ==3:
 
 b = border(mascara, 600)
 
-#%%
+
+
+
+
+
+
+
+#%% Seleccion de ventanas
 
 A = As[cel]
-ws = 2.5
+ws = 10
 pre = stack_pre[5]
 desvios_bin, limit = busca_esferas( pre, ps = ps, th = A, win = ws )
 plt.figure( figsize = [6, 6] )
 plt.imshow( pre[ :limit , :limit ], cmap = cm_crimson, vmin = 150, vmax = 600 )
-plt.imshow( desvios_bin, cmap = 'gray', alpha = 0.09, extent = [0,limit,limit,0])
+plt.imshow( 1-desvios_bin, cmap = 'gray', alpha = 0.09, extent = [0,limit,limit,0])
 barra_de_escala( 10, sep = 2, more_text = 'Célula ' + str(cel), a_lot_of_text = str( int( np.mean( desvios_bin )*100 ) ) + '%', font_size = 'large' )
 print(  np.mean(desvios_bin) )
 
@@ -139,21 +146,22 @@ plt.grid()
 
 #%%
 cel = 0
-# runcell('Invocacion', 'C:/Users/gonza/1/Tesis/PIV/Puesta a punto 2.py')
-runcell('Invocacion', 'D:/Gonzalo/PIV/Puesta a punto 2.py')
-ws = 2.5
+runcell('Invocacion', 'C:/Users/gonza/1/Tesis/PIV/Puesta a punto 2.py')
+# runcell('Invocacion', 'D:/Gonzalo/PIV/Puesta a punto 2.py')
+
+ws = 2
 it = 3
 vi = int( int( np.round(ws/ps) )*2**(it-1) )
 bordes_extra = 8
 
 Noise_for_NMT = 0.2
-Threshold_for_NMT = 2.5
+Threshold_for_NMT = 4
 modo = "Smooth3"
 suave0 = 3
 
 pre = stack_pre[5]
 post, ZYX = correct_driff_3D( stack_post, pre, 20, info = True )
-
+#%%
 
 dominio, deformacion = n_iterations( post, pre, vi, it, exploration = bordes_extra, mode = modo, A = As[cel])
 Y_0, X_0 = deformacion 
@@ -168,21 +176,88 @@ fs = 'small'
 scale0 = 100
 plt.figure(figsize = [6,4] )
 plt.imshow( mascara, cmap = color_maps[cel], alpha = 0.5 )
-# plt.quiver(x,y,X_0,-Y_0, scale = scale0, pivot='tail')
+plt.quiver(x,y,X_0,-Y_0, res, cmap = cm_crimson, scale = scale0, pivot='tail')
 # plt.quiver(x,y,X_nmt,-Y_nmt, scale = scale0, pivot='tail')
-plt.quiver(x,y,X_s,-Y_s, scale = scale0, pivot='tail')
-barra_de_escala( 10, sep = 1.5,  font_size = fs, color = 'k' )
+# plt.quiver(x,y,X_s,-Y_s, scale = scale0, pivot='tail')
+# barra_de_escala( 10, sep = 1.5,  font_size = fs, color = 'k' )
 plt.xlim([0,1023])
 plt.ylim([1023,0])
 plt.show()
 
+#%% Plot NMT
+
+fs = 'small'
+
+scale0 = 50
+plt.figure(figsize = [6,4] )
+plt.imshow( smooth(mascara,12), cmap = color_maps[cel], alpha = 0.5 )
+plt.quiver(x,y,X_0,-Y_0, res, width = 0.008, cmap = cm_crimson, scale = scale0, pivot='tail')
+# plt.quiver(x,y,X_nmt,-Y_nmt, width = 0.002, scale = scale0, pivot='tail')
+# plt.quiver(x,y,X_s,-Y_s, scale = scale0, pivot='tail')
+# barra_de_escala( 10, sep = 1.5,  font_size = fs, color = 'k' )
+plt.xlim([200 + ws/ps/2,400 - ws/ps/2])
+plt.ylim([400 - ws/ps/2,200 + ws/ps/2])
+plt.show()
+
+#%%
+fondo_pre = median_blur(celula_pre, 50 )
+#%%
+# mascara = smooth(mascara, 11)
+# b = border(mascara, 600)
+fs = 'large'
+
+plt.figure(figsize = [7,7], layout = 'compressed')
+a = np.mean( pre )/np.mean( post )
+a_x, b_x = 225, 375
+a_y, b_y = 225, 375
+
+xo, yo = 257, 257
+
+plt.subplot(1,3,1)
+plt.imshow( pre, cmap = cm_crimson, vmin = 150, vmax = 400 )
+plt.imshow( post, cmap = cm_green, vmin = 150, vmax = 400/(a + 0.1), alpha = 0.5 )
+plt.plot( b[1], b[0], c = 'w', ls = 'dashed', lw = 0.75  )
+# barra_de_escala( 10, pixel_size = ps, img_len = np.abs(a_x - b_x), sep = 0.8,  font_size = fs, color = 'w', text = False)
+plt.xlim([a_x,b_x])
+plt.ylim([b_y,a_y])
+plt.xticks([])
+plt.yticks([])
+for i in np.arange(-5, -10, -0.1):
+    plt.plot([ xo-25, xo ], [yo + i, yo + i], color='w', linewidth = 2)
+plt.text( xo - 12.5, yo - 14 , '2 µm', color= 'w', weight='bold', ha='center', va = 'bottom', fontsize = fs )
 
 
+plt.subplot(1,3,2)
+plt.imshow( mascara, cmap = color_maps[cel], alpha = 0.9 )
+plt.quiver(x,y,X_0,-Y_0, res, width = 0.008, cmap = cm_crimson, scale = scale0, pivot='tail')
+# plt.quiver(x,y,X_s,-Y_s, width = 0.006, scale = 100,  pivot='tail')
+# barra_de_escala( 10, sep = 0.8, img_len = np.abs(a_x - b_x),  font_size = fs, color = 'k', text = False)
+plt.xlim([a_x,b_x])
+plt.ylim([b_y,a_y])
+plt.xticks([])
+plt.yticks([])
+for i in np.arange(-5, -10, -0.1):
+    plt.plot([ xo-25, xo ], [yo + i, yo + i], color='k', linewidth = 2)
+plt.text( xo - 12.5, yo - 14 , '2 µm', color= 'k', weight='bold', ha='center', va = 'bottom', fontsize = fs )
+plt.text( (b_x+a_x)/2, b_y+20 , 'Antes del NMT', color= 'k', weight='bold', ha='center', va = 'bottom', fontsize = 14)
 
 
+plt.subplot(1,3,3)
+plt.imshow( mascara, cmap = color_maps[cel], alpha = 0.9 )
+# plt.quiver(x,y,X_0,-Y_0, res, width = 0.008, cmap = cm_crimson, scale = scale0, pivot='tail')
+plt.quiver(x,y,X_nmt,-Y_nmt, res, width = 0.008, cmap = cm_crimson, scale = scale0,  pivot='tail')
+# barra_de_escala( 10, sep = 0.8, img_len = np.abs(a_x - b_x),  font_size = fs, color = 'k', text = False)
+plt.xlim([a_x,b_x])
+plt.ylim([b_y,a_y])
+plt.xticks([])
+plt.yticks([])
+for i in np.arange(-5, -10, -0.1):
+    plt.plot([ xo-25, xo ], [yo + i, yo + i], color='k', linewidth = 2)
+plt.text( xo - 12.5, yo - 14 , '2 µm', color= 'k', weight='bold', ha='center', va = 'bottom', fontsize = fs )
+plt.text( (b_x+a_x)/2, b_y+20 , 'Después del NMT', color= 'k', weight='bold', ha='center', va = 'bottom', fontsize = 14 )
 
 
-
+plt.show()
 
 
 
@@ -215,10 +290,10 @@ for iterador in range(4):
     bordes_extra = 8
     
     Noise_for_NMT = 0.2
-    Threshold_for_NMT = 2.5
+    Threshold_for_NMT = 7.5
     modo = "Smooth3"
     suave0 = 3
-    fs = 'medium'
+    fs = 'small'
 
     zf = min( len(stack_pre), len(stack_post) ) - 1
 
@@ -246,8 +321,8 @@ for iterador in range(4):
         x, y = dominio
         l = len(x)
     
-        # Rz_ = np.sqrt( X_nmt**2 + Y_nmt**2 )
-        Rz_ = np.sqrt( X_s**2 + Y_s**2 )
+        Rz_ = np.sqrt( X_nmt**2 + Y_nmt**2 )
+        # Rz_ = np.sqrt( X_s**2 + Y_s**2 )
         Rz_dist_ = []
         for j in range(l):
             for i in range(l):
@@ -259,7 +334,8 @@ for iterador in range(4):
         plt.subplot(1,2,1)
         plt.imshow( mascara, cmap = color_maps[cel], alpha = 0.5 )
         # plt.quiver(x,y,X_nmt,-Y_nmt, scale = scale0, pivot='tail')
-        plt.quiver(x,y,X_s,-Y_s, scale = scale0, pivot='tail')
+        # plt.quiver(x,y,X_s,-Y_s, scale = scale0, pivot='tail')
+        plt.quiver(x,y,deformacion[1],-deformacion[0], res, cmap = cm_crimson, scale = scale0, pivot='tail')
         barra_de_escala( 10, sep = 1.5, pixel_size = ps_list[cel], font_size = fs, color = 'k', more_text = 'Z = ' + str(z) )
         plt.xlim([0,1023])
         plt.ylim([1023,0])
@@ -560,31 +636,41 @@ plt.errorbar(  np.arange( len(cobertura_todas[0]) )/2, cobertura_todas[0], D_cob
 
 
 
+#%%
+A = As[cel]
+ws = 1
+pre = stack_pre[5]
+desvios_bin, limit = busca_esferas( pre, ps = ps, th = A, win = ws )
+plt.figure( figsize = [6, 6] )
+plt.imshow( pre[ :limit , :limit ], cmap = cm_crimson, vmin = 150, vmax = 600 )
+plt.imshow( desvios_bin, cmap = 'gray', alpha = 0.09, extent = [0,limit,limit,0])
+barra_de_escala( 10, sep = 2, more_text = 'Célula ' + str(cel), a_lot_of_text = str( int( np.mean( desvios_bin )*100 ) ) + '%', font_size = 'large' )
+print(  np.mean(desvios_bin) )
 
 
 
 
 
-
+# cuantifiacar el NMT multiplicado por el modulo los vectores que elimina
 #%% Ventanas de exploracin
 
 v_a, v_b = 5, 1
 Rv_dist_todas = []
 cobertura_todas = []
 NMT_list_todas = []
-angulo_todas = []
+# angulo_todas = []
 z0 = 5
 color_maps = [cm0, cm1, cm2, cm3]
 
-for cel in range(1):
+for cel in range(4):
     runcell('Invocacion', 'C:/Users/gonza/1/Tesis/PIV/Puesta a punto 2.py')    
     ventanas = np.arange( int(v_a/ps), int(v_b/ps),-1)
     
     Noise_for_NMT = 0.2
-    Threshold_for_NMT = 2.5
+    Threshold_for_NMT = 7.5
     modo = "Smooth3"
     suave0 = 3
-    fs = 'x-large'
+    fs = 'small'
 
     zf = min( len(stack_pre), len(stack_post) ) - 1
 
@@ -594,7 +680,7 @@ for cel in range(1):
     Rv_dist_celula = []
     cobertura_celula = []
     NMT_list_celula = []
-    angulo_celula = []
+    # angulo_celula = []
     
     for vf in ventanas:
         print(vf)
@@ -602,6 +688,7 @@ for cel in range(1):
         it = 3
         vi = int( int( vf )*2**(it-1) )
         bordes_extra = 8
+        # it = 1
     
         desvios_bin, limit = busca_esferas( pre, ps = ps_list[cel], th = As[cel], win = vf*ps )
         dominio, deformacion = n_iterations( post, pre, vi, it, exploration = bordes_extra, mode = modo, A = As[cel])
@@ -610,100 +697,197 @@ for cel in range(1):
         x, y = dominio
         l = len(x)
     
-        CM = center_of_mass(mascara)
+        # CM = center_of_mass(mascara)
         
         Rv_ = np.sqrt( X_nmt**2 + Y_nmt**2 )
-        angulo_ = []
+        
+        # angulo_ = []
         # Rv_ = np.sqrt( X_s**2 + Y_s**2 )
         Rv_dist_ = []
         Rv_vector_dist_ = []
+        NMT_ = []
         for j in range(l):
             for i in range(l):
                 if  0 < int(x[j,i]) < 1024 and 0 < int(y[j,i]) < 1024 and int(mascara10[ int(x[j,i]), int(y[j,i]) ]) == 1:
                     Rv_dist_.append( Rv_[j,i]*ps )
+                    NMT_.append( res[j,i] )
                     
-                    if Rv_[j,i] != 0:
-                        angulo = np.arccos( np.dot([X_nmt[j,i], Y_nmt[j,i]], [ x[j,i] - CM[1], y[j,i] - CM[0] ])/( np.linalg.norm([ x[j,i] - CM[1], y[j,i] - CM[0] ])*np.linalg.norm([X_nmt[j,i], Y_nmt[j,i]]) )         )
-                    else:
-                        angulo = 0
-                    angulo_.append(angulo)
+                    # if Rv_[j,i] != 0:
+                    #     angulo = np.arccos( np.dot([X_nmt[j,i], Y_nmt[j,i]], [ x[j,i] - CM[1], y[j,i] - CM[0] ])/( np.linalg.norm([ x[j,i] - CM[1], y[j,i] - CM[0] ])*np.linalg.norm([X_nmt[j,i], Y_nmt[j,i]]) )         )
+                    # else:
+                    #     angulo = 0
+                    # angulo_.append(angulo)
 
         scale0 = 100
         plt.figure()
         plt.imshow( mascara, cmap = color_maps[cel], alpha = 0.5 )
-        plt.quiver(x,y,X_nmt,-Y_nmt, scale = scale0, pivot='tail')
+        # plt.quiver(x,y,deformacion[1],-deformacion[0], scale = scale0, pivot='tail')
+        # plt.quiver(x,y,X_nmt,-Y_nmt, scale = scale0, pivot='tail')
         # plt.quiver(x,y,X_s,-Y_s, scale = scale0, pivot='tail')
+        
+        plt.quiver(x,y,deformacion[1],-deformacion[0], res, cmap = cm_crimson, scale = scale0, pivot='tail')
+        # plt.quiver(x,y,X_nmt,-Y_nmt, res, cmap = cm_crimson, scale = scale0, pivot='tail')
         barra_de_escala( 10, sep = 1.5, pixel_size = ps_list[cel], font_size = fs, color = 'k', more_text = 'Vf = ' + str(np.round(vf*ps,1) ) + ' µm' )
-        plt.xlim([0,1023])
-        plt.ylim([1023,0])
+        plt.xlim( [0,1023] )
+        plt.ylim( [1023,0] )
         plt.show()
 
+        # plt.figure()
+        # plt.imshow(res)        
+        # plt.show()
+
         cobertura_celula.append( np.mean(desvios_bin) )
-        NMT_list_celula.append( np.mean(res) )
+        NMT_list_celula.append( np.mean(NMT_) )
         Rv_dist_celula.append(Rv_dist_)
-        angulo_celula.append(angulo_)
+        # angulo_celula.append(angulo_)
     
     cobertura_todas.append( cobertura_celula )
     NMT_list_todas.append( NMT_list_celula ) 
     Rv_dist_todas.append(Rv_dist_celula)
-    angulo_todas.append(angulo_celula)
+    # angulo_todas.append(angulo_celula)
 
 #%%
 
 ventanas0 = np.arange( int(v_a/ps_list[0]), int(v_b/ps_list[0]),-1)*ps_list[0]
-# ventanas0 = np.arange( int(5/ps_list[1]), int(1/ps_list[1]),-1)*ps_list[1]
-
-promR0 = np.array( [ np.mean(Rv_dist_todas[0][i]) for i in range(len( Rv_dist_todas[0]) ) ]  ) 
-stdR0 = np.array( [ np.std(Rv_dist_todas[0][i]) for i in range(len( Rv_dist_todas[0]) ) ]  ) 
-std_ang = np.array( [ np.std( angulo_todas[0][i] ) for i in range(len( angulo_todas[0]) ) ]  ) 
-mean_ang = np.array( [ np.mean( angulo_todas[0][i] ) for i in range(len( angulo_todas[0]) ) ]  ) 
-
-
-plt.figure( figsize = [6,4] )
-# plt.errorbar( ventanas0, normalizar(promR0), stdR0/np.max(promR0)/3 , fmt = 'o', label = 'promedio' )
-# plt.plot( ventanas0, normalizar(promR0) , 'o', label = 'promedio' )
-plt.plot( ventanas0, mean_ang , 'o', label = 'angulo' )
-plt.plot( ventanas0, cobertura_todas[0], 'o', label = 'ceobertura')
-plt.plot( ventanas0, NMT_list_todas[0], 'o', label = 'NMT')
-plt.xlabel( "Ventana final [µm]" )
-plt.grid()
-plt.legend()
-
-plt.xlim([5.2,0.8])
-
-#%% 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-ventanas0 = np.arange( int(5/ps_list[0]), int(2/ps_list[0]),-1)
-ventanas1 = np.arange( int(5/ps_list[1]), int(2/ps_list[1]),-1)
-ventanas2 = np.arange( int(5/ps_list[2]), int(2/ps_list[2]),-1)
-ventanas3 = np.arange( int(5/ps_list[3]), int(2/ps_list[3]),-1)
+ventanas1 = np.arange( int(v_a/ps_list[1]), int(v_b/ps_list[1]),-1)*ps_list[1]
+ventanas2 = np.arange( int(v_a/ps_list[2]), int(v_b/ps_list[2]),-1)*ps_list[2]
+ventanas3 = np.arange( int(v_a/ps_list[3]), int(v_b/ps_list[3]),-1)*ps_list[3]
 ventanas = [ventanas0,ventanas1,ventanas2,ventanas3]
 
 promR0 = np.array( [ np.mean(Rv_dist_todas[0][i]) for i in range(len( Rv_dist_todas[0]) ) ]  ) 
 promR1 = np.array( [ np.mean(Rv_dist_todas[1][i]) for i in range(len( Rv_dist_todas[1]) ) ]  ) 
 promR2 = np.array( [ np.mean(Rv_dist_todas[2][i]) for i in range(len( Rv_dist_todas[2]) ) ]  ) 
 promR3 = np.array( [ np.mean(Rv_dist_todas[3][i]) for i in range(len( Rv_dist_todas[3]) ) ]  ) 
-promR = [promR0[0], promR1[1], promR2[2], promR3[3] ] 
+promR = [promR0, promR1, promR2, promR3 ] 
+
+stdR0 = np.array( [ np.std(Rv_dist_todas[0][i]) for i in range(len( Rv_dist_todas[0]) ) ]  ) 
+stdR1 = np.array( [ np.std(Rv_dist_todas[1][i]) for i in range(len( Rv_dist_todas[1]) ) ]  ) 
+stdR2 = np.array( [ np.std(Rv_dist_todas[2][i]) for i in range(len( Rv_dist_todas[2]) ) ]  ) 
+stdR3 = np.array( [ np.std(Rv_dist_todas[3][i]) for i in range(len( Rv_dist_todas[3]) ) ]  ) 
+stdR = [stdR0, stdR1, stdR2, stdR3 ] 
+#%%
+fig, ax1 = plt.subplots(figsize=(7, 12))
+cel = 0
+line1, = ax1.plot( ventanas[cel], promR[cel], 'o' , color=colores[cel], label='NMT')
+cel = 1
+line1, = ax1.plot( ventanas[cel], promR[cel], 'o' , color=colores[cel], label='NMT')
+cel = 2
+line1, = ax1.plot( ventanas[cel], promR[cel], 'o' , color=colores[cel], label='NMT')
+cel = 3
+line1, = ax1.plot( ventanas[cel], promR[cel], 'o' , color=colores[cel], label='NMT')
+
+# line3, = ax1.plot([1],[1],'s', c = 'k', label = 'NMT')
+ax1.set_ylabel('Deformación promedio [µm]', color='k')
+ax1.set_xlabel('Ventana en la última iteración [µm]', color='k')
+ax1.set_yticks( np.arange(0.16,0.56, 0.02), np.round(np.arange(0.16,0.56, 0.02),2) )
+# ax1.set_ylim([-0.005,0.105])
+ax1.set_xlim([5.2,0.8])
+ax1.grid()
 
 #%%
+
+
+#%%
+cel = 0
+plt.rcParams['font.size'] = 11
+
+fig, ax1 = plt.subplots(figsize=(7, 4))
+cel = 0
+line1, = ax1.plot( ventanas[cel], np.array(NMT_list_todas[cel]), 's' , color=colores[cel], label='NMT')
+cel = 1
+line1, = ax1.plot( ventanas[cel], np.array(NMT_list_todas[cel]), 's' , color=colores[cel], label='NMT')
+cel = 2
+line1, = ax1.plot( ventanas[cel], np.array(NMT_list_todas[cel]), 's' , color=colores[cel], label='NMT')
+cel = 3
+line1, = ax1.plot( ventanas[cel], np.array(NMT_list_todas[cel]), 's' , color=colores[cel], label='NMT')
+line3, = ax1.plot([1],[1],'s', c = 'k', label = 'NMT')
+ax1.set_ylabel('Fracción excluida por el NMT', color='k')
+ax1.set_xlabel('Ventana en la última iteración [µm]', color='k')
+ax1.set_ylim([-0.005,0.105])
+ax1.set_xlim([5.2,0.8])
+ax1.grid()
+
+ax2 = ax1.twinx()
+cel = 0
+line2, = ax2.plot( ventanas[cel], cobertura_todas[cel], '^' , color=colores[cel], label='NMT')
+cel = 1
+line2, = ax2.plot( ventanas[cel], cobertura_todas[cel], '^' , color=colores[cel], label='NMT')
+cel = 2
+line2, = ax2.plot( ventanas[cel], cobertura_todas[cel], '^' , color=colores[cel], label='NMT')
+cel = 3
+line2, = ax2.plot( ventanas[cel], cobertura_todas[cel], '^' , color=colores[cel], label='NMT')
+line4, = ax2.plot([1],[2],'^', c = 'k', label = 'Cobertura')
+
+ax2.set_ylabel('Fracción cubierta')
+ax2.set_ylim([-0.05,1.05])
+
+# Añadir leyendas y mostrar el gráfico
+
+lines = [line3, line4]
+labels = [line.get_label() for line in lines]
+ax1.legend(lines, labels, loc='lower right')
+
+    
+plt.show()
+
+#%%
+
+plt.rcParams['font.size'] = 12
+fig, axs = plt.subplots(4, 1, figsize=(7, 11))
+orden = [3,2,1,0]
+
+# Trazar en cada subgráfico
+for iterador, ax in enumerate(axs):
+
+    cel = orden[iterador]
+    
+    line1, = ax.plot( ventanas[cel] , promR[cel], 'o', color = colores[cel], label = "Deformación" )
+    # line1 = ax.errorbar( ventanas[cel] , promR[cel], stdR[cel]/30, fmt = 'o', color = colores[cel], label = "Deformación" )
+    # line1 = ax.plot(ventanas[cel] , NMT_list_todas[cel], 'o'  )
+    ax.set_ylabel('Deformación promedio [µm]')
+    
+    
+    if iterador < 3:
+        ax.set_ylim([0.09,0.21])
+        ax.set_xticks(np.arange(7),['']*7)
+    else:
+        # ax.set_ylim([0.35,0.5])
+        ax.set_xlabel('Ventana de exploración [µm]', color='k')
+    ax.set_xlim([5.3,0.7])
+    
+    
+    ax2 = ax.twinx()
+    line2, = ax2.plot( ventanas[cel], cobertura_todas[cel], 'v' , color='k', label='Cobertura')
+    line3, = ax2.plot( ventanas[cel], np.array(NMT_list_todas[cel])*10, 's' , color='k', label='NMT x10')
+    # line2 = ax2.errorbar(np.arange( ventanas[cel] cobertura_todas[cel], D_cobertura_todas[cel], fmt = 'o' , color='k', label='Cobertura')
+    ax2.set_ylabel('Parámetros de control', color='k')
+    ax2.set_ylim([-0.19,1.19])
+    
+    # Añadir leyendas y mostrar el gráfico
+    ax.grid()
+    lines = [line1, line2, line3]
+    labels = [line.get_label() for line in lines]
+    ax.legend(lines, labels, loc='lower right')
+    
+fig.tight_layout()
+    
+plt.show()
+#%%
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 cel = 0
 data = Rv_dist_todas[cel]
 
@@ -737,6 +921,32 @@ plt.xlim([5.4,1.6])
 plt.grid()
 
 #%%
+
+
+# ventanas0 = np.arange( int(v_a/ps_list[0]), int(v_b/ps_list[0]),-1)*ps_list[0]
+ventanas0 = np.arange( int(5/ps_list[3]), int(1/ps_list[3]),-1)*ps_list[3]
+
+promR0 = np.array( [ np.mean(Rv_dist_todas[0][i]) for i in range(len( Rv_dist_todas[0]) ) ]  ) 
+stdR0 = np.array( [ np.std(Rv_dist_todas[0][i]) for i in range(len( Rv_dist_todas[0]) ) ]  ) 
+# std_ang = np.array( [ np.std( angulo_todas[0][i] ) for i in range(len( angulo_todas[0]) ) ]  ) 
+# mean_ang = np.array( [ np.mean( angulo_todas[0][i] ) for i in range(len( angulo_todas[0]) ) ]  ) 
+
+
+plt.figure( figsize = [6,4] )
+# plt.errorbar( ventanas0, normalizar(promR0), stdR0/np.max(promR0)/3 , fmt = 'o', label = 'promedio' )
+plt.plot( ventanas0, normalizar(promR0), 'o', label = 'promedio' )
+# plt.plot( ventanas0, mean_ang , 'o', label = 'angulo' )
+plt.plot( ventanas0, cobertura_todas[0], 'o', label = 'cobertura')
+plt.plot( ventanas0, np.array(NMT_list_todas[0])/np.max([1]), 'o', label = 'NMT')
+plt.xlabel( "Ventana final [µm]" )
+plt.grid()
+plt.legend()
+
+plt.xlim([5.2,0.8])
+
+#%% 
+
+
 
 #%%
 plt.figure(figsize=[10,10], tight_layout = True)
@@ -1164,10 +1374,55 @@ plt.show()
 
 
 
+#%%
+ws = 10
+desvios_bin, limit = busca_esferas( pre, ps = ps, th = A, win = ws )
+plt.figure( figsize = [6, 6] )
+plt.imshow( pre, cmap = cm_crimson, vmin = 150, vmax = 600 )
+barra_de_escala( 10, sep = 1, font_size = 'large' )
+
+#%% vi = 124 px
+
+pre_grande = np.ones([1116]*2)*np.max(pre)/8
+pre_grande[ 46:-46, 46:-46 ] = pre
+
+#%%
 
 
+plt.figure( figsize = [8, 6], layout = 'compressed' )
 
+plt.subplot(1,3,1)
+plt.imshow( pre_grande, cmap = cm_crimson, vmin = 150, vmax = 600 )
+# barra_de_escala( 10, img_len = 1100, sep = 1, font_size = 'large' )
+plt.xticks([])
+plt.yticks([])
+plt.text(10, -10, '10 µm', ha='left', va = 'bottom', fontsize = 14, weight='bold')
 
+for i in np.arange(1,9,1):
+    plt.plot( [124*i,124*i], [0,1115], c = 'w', ls = '--' , lw = 0.5)
+    plt.plot( [0,1115], [124*i,124*i], c = 'w', ls = '--' , lw = 0.5)
+
+plt.subplot(1,3,2)
+plt.imshow( pre_grande, cmap = cm_crimson, vmin = 150, vmax = 600 )
+# barra_de_escala( 10, img_len = 1100, sep = 1, font_size = 'large' )
+plt.xticks([])
+plt.yticks([])
+plt.text(10, -10, '5 µm', ha='left', va = 'bottom', fontsize = 14, weight='bold')
+
+for i in np.arange(0.5,9,0.5):
+    plt.plot( [124*i,124*i], [0,1115], c = 'w', ls = '--' , lw = 0.25)
+    plt.plot( [0,1115], [124*i,124*i], c = 'w', ls = '--' , lw = 0.25)
+
+plt.subplot(1,3,3)
+plt.imshow( pre_grande, cmap = cm_crimson, vmin = 150, vmax = 600 )
+# barra_de_escala( 10, img_len = 1100, sep = 1, font_size = 'large' )
+plt.xticks([])
+plt.yticks([])
+plt.text(10, -10, '2.5 µm', ha='left', va = 'bottom', fontsize = 14, weight='bold')
+
+for i in np.arange(0.25,9,0.25):
+    plt.plot( [124*i,124*i], [0,1115], c = 'w', ls = '--' , lw = 0.125)
+    plt.plot( [0,1115], [124*i,124*i], c = 'w', ls = '--' , lw = 0.125)
 
 
 
