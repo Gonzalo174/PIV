@@ -1,4 +1,178 @@
-﻿# basic functions for traction force microscopy
+﻿
+import scipy
+
+# X, Y = np.zeros([ X.shape[0] + 1 ]*2 ), np.zeros([ Y.shape[0] + 1 ]*2 )
+# X[:-1,:-1], Y[:-1,:-1] = X_s, Y_s
+
+
+#%%
+
+X, Y = X_s*ps, Y_s*ps
+x0, y0 = np.meshgrid( np.arange( -len(X)/2, len(X)/2, 1  ), np.arange(  -len(X)/2, len(X)/2, 1 ) )
+x, y = x0*(ws), y0*(ws)
+
+nu = 0.5
+E = 31.6
+r = np.sqrt( x**2 + y**2 )
+
+alpha = (1+nu)/(np.pi*E*(r+0.000000000001)**3)
+
+G11 = alpha*((1-nu)*r**2+nu*x**2)
+G_ = alpha*nu*x*y
+G22 = alpha*((1-nu)*r**2+nu*y**2)
+
+# g11 = np.fft.fft2( G11 )
+# g_ = np.fft.fft2( G_ )
+# g22 = np.fft.fft2( G22 )
+
+l = len(X)
+kx1 = np.array([list(range(0, int(l / 2), 1)), ] * int(l))
+kx2 = np.array([list(range(-int(l / 2), 0, 1)), ] * int(l))
+
+kx = np.append(kx1, kx2, axis=1) * 2 * np.pi 
+ky = np.transpose(kx)
+k = np.sqrt(kx ** 2 + ky ** 2) / (ps * l)
+alpha = np.arctan2(ky, kx)
+alpha[0, 0] = np.pi / 2
+g11 = ((k * E) / (2 * (1 - nu ** 2))) * ((1 - nu + nu * np.cos(alpha) ** 2))
+g22 = ((k * E) / (2 * (1 - nu ** 2))) * ((1 - nu + nu * np.sin(alpha) ** 2))
+g_ = ((k * E) / (2 * (1 - nu ** 2))) * (nu * np.sin(alpha) * np.cos(alpha))
+
+dx = np.fft.fft2( X )
+dy = np.fft.fft2( Y )
+
+lam = 1000
+
+tx = ( ( g11**3 + (g_**2)*(2*g11+g22)  ) + (g11*lam**2) )*dx + ( ( g_*(g11**2+g_**2+g22**2+g11*g22) ) + (g_*lam**2) )*dy
+ty = ( ( g_*(g11**2+g_**2+g22**2+g11*g22) )   + (g_*lam**2) )*dx + ( ( g22**3 + (g_**2)*(2*g22+g11)) + (g22*lam**2) )*dy
+
+
+Tx = scipy.fft.ifft2(tx).real
+Ty = scipy.fft.ifft2(ty).real
+
+plt.quiver(x*12+np.max(y*12),y*12+np.max(y*12),Tx,-Ty)
+plt.imshow(mascara, cmap = 'Reds', alpha = 0.5)
+#%%
+plt.quiver(X,Y)
+
+
+#%%
+
+plt.imshow(X)
+
+plt.imshow(np.abs(dx))
+
+
+ 
+#%%
+
+tx = 
+ty = 
+
+
+
+
+#%%
+
+d = 10
+
+u, v = np.meshgrid( np.arange( -d, d+1, 1 ), np.arange( -d, d+1, 1 ) )
+w = np.sqrt( u**2 + v**2 )
+
+alpha = (1+nu)/(np.pi*E*(w+0.000001)**3)
+
+G11 = alpha*(1-nu)*w**2+nu*u**2
+G12 = alpha*nu*u*v
+G21 = alpha*nu*u*v
+G22 = alpha*(1-nu)*w**2+nu*v**2
+
+
+#%%
+plt.imshow(np.real(g22))
+
+
+
+
+#%%
+
+u, v = X_s, Y_s
+
+l = len(u)
+
+u_shift = (u - np.mean(u))  # shifting to zero mean  (translating to pixelsize of u-image is done later)
+v_shift = (v - np.mean(v))
+
+
+# 2) produceing wave vectors   ## why this form
+# form 1:l/2 then -(l/2:1)
+kx1 = np.array([list(range(0, int(l / 2), 1)), ] * int(l))
+kx2 = np.array([list(range(-int(l / 2), 0, 1)), ] * int(l))
+kx = np.append(kx1, kx2, axis=1) * 2 * np.pi  # fourier transform in this case is defined as
+# F(kx)=1/2pi integral(exp(i*kx*x)dk therefore kx must be expressed as a spatial frequency in distance*2*pi
+
+
+#%%
+
+ky = np.transpose(kx)
+k = np.sqrt(kx ** 2 + ky ** 2) / (pixelsize2 * max_ind)
+# np.save("/home/user/Desktop/k_test.npy",k)
+
+# 2.1) calculating angle between k and kx with atan 2 function (what is this exactely??)  just if statemments to get
+# angel from x1 to x2 in fixed direction... (better explanation)
+alpha = np.arctan2(ky, kx)
+alpha[0, 0] = np.pi / 2
+# np.save("/home/user/Desktop/alpha_test.npy",alpha)
+# 3) calculation of K --> Tensor to calculate displacements from Tractions. We calculate inverse of K
+# (check if correct inversion by your self)
+# K⁻¹=[[kix kid],
+#     [kid,kiy]]  ,,, so is "diagonal, kid appears two times
+
+kix = ((k * young) / (2 * (1 - sigma ** 2))) * ((1 - sigma + sigma * np.cos(alpha) ** 2))
+kiy = ((k * young) / (2 * (1 - sigma ** 2))) * ((1 - sigma + sigma * np.sin(alpha) ** 2))
+kid = ((k * young) / (2 * (1 - sigma ** 2))) * (sigma * np.sin(alpha) * np.cos(alpha))
+
+# np.save("/home/user/Desktop/kid_seg2_test.npy",(sigma * np.sin(alpha) * np.cos(alpha)))
+## adding zeros in kid diagonals(?? why do i need this)
+kid[:, int(max_ind / 2)] = np.zeros(max_ind)
+kid[int(max_ind / 2), :] = np.zeros(max_ind)
+
+# 4) calculate fourrier transform of dsiplacements
+# u_ft=np.fft.fft2(u_expand*pixelsize1*2*np.pi)
+# v_ft=np.fft.fft2(v_expand*pixelsize1*2*np.pi)   #
+u_ft = scipy.fft.fft2(u_expand * pixelsize1)
+v_ft = scipy.fft.fft2(v_expand * pixelsize1)
+
+# 4.1) calculate tractions in fourrier space T=K⁻¹*U, U=[u,v]  here with individual matrix elelemnts..
+tx_ft = kix * u_ft + kid * v_ft
+ty_ft = kid * u_ft + kiy * v_ft
+
+# 4.2) go back to real space
+tx = scipy.fft.ifft2(tx_ft).real
+ty = scipy.fft.ifft2(ty_ft).real
+
+# 5.2) cut back to oringinal shape
+tx_cut = tx[0:ax1_length, 0:ax2_length]
+ty_cut = ty[0:ax1_length, 0:ax2_length]
+
+
+
+
+
+
+
+
+
+
+#%%
+
+plt.quiver(x,y,dx,dy, pivot='tail')
+
+#%%
+
+plt.imshow(  G12  )
+
+#%%
+# basic functions for traction force microscopy
 import matplotlib.pyplot as plt
 import numpy as np
 import openpiv.filters

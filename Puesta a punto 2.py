@@ -93,7 +93,7 @@ b = border(mascara, 600)
 #%% Seleccion de ventanas
 
 A = As[cel]
-ws = 10
+ws = 2.5
 pre = stack_pre[5]
 desvios_bin, limit = busca_esferas( pre, ps = ps, th = A, win = ws )
 plt.figure( figsize = [6, 6] )
@@ -149,13 +149,13 @@ cel = 0
 runcell('Invocacion', 'C:/Users/gonza/1/Tesis/PIV/Puesta a punto 2.py')
 # runcell('Invocacion', 'D:/Gonzalo/PIV/Puesta a punto 2.py')
 
-ws = 2
+ws = 2.5
 it = 3
 vi = int( int( np.round(ws/ps) )*2**(it-1) )
 bordes_extra = 8
 
 Noise_for_NMT = 0.2
-Threshold_for_NMT = 4
+Threshold_for_NMT = 5
 modo = "Smooth3"
 suave0 = 3
 
@@ -176,10 +176,10 @@ fs = 'small'
 scale0 = 100
 plt.figure(figsize = [6,4] )
 plt.imshow( mascara, cmap = color_maps[cel], alpha = 0.5 )
-plt.quiver(x,y,X_0,-Y_0, res, cmap = cm_crimson, scale = scale0, pivot='tail')
+# plt.quiver(x,y,X_0,-Y_0, res, cmap = cm_crimson, scale = scale0, pivot='tail')
 # plt.quiver(x,y,X_nmt,-Y_nmt, scale = scale0, pivot='tail')
-# plt.quiver(x,y,X_s,-Y_s, scale = scale0, pivot='tail')
-# barra_de_escala( 10, sep = 1.5,  font_size = fs, color = 'k' )
+plt.quiver(x,y,X_s,-Y_s, scale = scale0, pivot='tail')
+barra_de_escala( 10, sep = 1.5,  font_size = fs, color = 'k' )
 plt.xlim([0,1023])
 plt.ylim([1023,0])
 plt.show()
