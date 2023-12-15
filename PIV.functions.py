@@ -757,6 +757,86 @@ def nmt(Y_, X_, noise, threshold, mode = "Mean"):
     return Y, X, result
 
 
+def traction( Y, X, ps, ws, E, nu, lam, Lcurve = False ):
+    """
+    Parameters
+    ----------
+    Y : numpy.2darray
+        Deformation map coortinate in pixels.
+    X : numpy.2darray
+        Deformation map coortinate in pixels.
+    ps : float
+        nanospheres image's pixel size in meters
+    ws : float
+        exploration window's size in meters
+    E : float
+        youngs modulus in Pascals
+    nu : float
+        posson ratio of the hidrogel
+    lam : float
+        regularization parameter
+
+    Returns
+    -------
+    ty : numpy.2darray
+        traction cordinate in Pascals
+    tx : numpy.2darray
+        traction cordinate in Pascals
+
+    """
+    l = X.shape[0]
+
+    FuX, FuY = np.fft.fft2( X*ps ), np.fft.fft2( Y*ps ) # FFT de la deformación
+    k0 = np.fft.fftfreq(l,ws)*2*np.pi
+    k0[0] = 0.00000001 # para evitar dividir por 0
+    kx, ky = np.meshgrid( k0, -k0 )
+    k = np.sqrt( kx**2 + ky**2 )
+    alpha = np.arctan2(ky, kx)
+
+    Kxx = 2*(1+nu)*( (1-nu)+nu*np.sin(alpha)**2 )/(E*k) 
+    Kyy = 2*(1+nu)*( (1-nu)+nu*np.cos(alpha)**2 )/(E*k)
+    K_ = 2*(1+nu)*( nu*np.cos(alpha)*np.sin(alpha) )/(E*k)  
+
+    # Kxx_inv = E*k*( (1-nu) + nu*np.cos(alpha)**2 )/(1-nu**2)
+    # Kyy_inv = E*k*( (1-nu) + nu*np.sin(alpha)**2 )/(1-nu**2)
+    # K__inv = -E*k*( nu*np.cos(alpha)*np.sin(alpha) )/(1-nu**2)   
+
+    Ttx, Tty = np.zeros([l]*2), np.zeros([l]*2)
+    Ttx_im, Tty_im = np.zeros([l]*2), np.zeros([l]*2)
+
+    for j in range(l):
+        for i in range(l):
+            TK = np.array( [[ Kxx[j,i]  ,   K_[j,i]  ],
+                           [ K_[j,i]   ,   Kyy[j,i] ]]  )
+            Tu = np.array(  [ FuX[j,i]   ,  FuY[j,i] ] )
+            Id = np.array( [[1,0],[0,1]] )
+            # TK_inv = np.linalg.inv(TK)
+            M = np.dot( np.linalg.inv( ( np.dot( TK, TK ) + lam*Id ) ) , TK )
+            Tt = np.dot( M, Tu )
+
+            Ttx[j,i], Tty[j,i] = np.real(Tt[0]), np.real(Tt[1])
+            Ttx_im[j,i], Tty_im[j,i] = np.imag(Tt[0]), np.imag(Tt[1])
+
+    imaginator = np.array( [ [1j]*l ]*l  )
+    tx, ty = np.fft.ifft2( Ttx + imaginator*Ttx_im ), np.fft.ifft2( Tty + imaginator*Tty_im )
+
+    # Tvx0 = FuX - Kxx*( Ttx + imaginator*Ttx_im  ) + K_*( Tty + imaginator*Tty_im ) 
+    # Tvy0 = FuY - K_*( Ttx + imaginator*Ttx_im  ) + Kyy*( Tty + imaginator*Tty_im )     
+    # vx0, vy0 = np.fft.ifft2( Tvx0 ), np.fft.ifft2( Tvy0 )
+    
+    Tvx0 = Kxx*( Ttx + imaginator*Ttx_im  ) + K_*( Tty + imaginator*Tty_im ) 
+    Tvy0 = K_*( Ttx + imaginator*Ttx_im  ) + Kyy*( Tty + imaginator*Tty_im )     
+    vx0, vy0 = np.fft.ifft2( Tvx0 ), np.fft.ifft2( Tvy0 )  
+  
+    if Lcurve == False:
+        result = ty, tx    
+    else:
+        result = ty, tx, vy0, vx0
+    
+    return result
+
+
+
 def Z_iteration0( stack_post0, img_pre0, win_shape, exploration = 1, translation_Y = "None", translation_X = "None", mode = "Smooth3", A = 0.9, z0 = 0 ):
     """
     Parameters

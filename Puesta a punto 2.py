@@ -46,7 +46,7 @@ color_maps = [cm0, cm1, cm2, cm3]
 #MCF10 D04 R9 5/10          2
 #MCF10 G18 R25 del 19/10    3
 #%%
-cel = 0
+cel = 1
 
 #%% Invocacion
 l = 6
@@ -145,7 +145,7 @@ plt.legend()
 plt.grid()
 
 #%%
-cel = 0
+cel = 3
 runcell('Invocacion', 'C:/Users/gonza/1/Tesis/PIV/Puesta a punto 2.py')
 # runcell('Invocacion', 'D:/Gonzalo/PIV/Puesta a punto 2.py')
 

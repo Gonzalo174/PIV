@@ -1,4 +1,260 @@
-﻿
+﻿# -*- coding: utf-8 -*-
+"""
+Created on Fri Dec 1 16:26:49 2023
+
+@author: gonza
+"""
+
+#%%
+
+plt.rcParams['figure.figsize'] = [7,3]
+plt.rcParams['font.size'] = 11
+plt.rcParams['font.family'] = "Times New Roman"
+#%% Resolucion del problema inverso
+nu = 0.5
+E = 31.6      # kPa
+lam = 5*1e-20
+
+# uX, uY = smooth(four_core(X_s*ps),2), smooth(four_core(Y_s*ps),2) 
+uX, uY = X_s, Y_s
+
+# ty, tx = traction(uY, uX, ps*1e-6, ws*1e-6, E*1e3, nu, lam)
+ty, tx, vy0, vx0 = traction(uY, uX, ps*1e-6, ws*1e-6, E*1e3, nu, lam, Lcurve = True)
+
+duvy0, duvx0 = uY*ps*1e-6 - vy0, uX*ps*1e-6 - vx0
+
+#%%
+plt.figure( figsize = [7,7], layout = 'compressed' )
+
+# Solucion
+plt.subplot(2,2,1)
+plt.quiver(x, y, tx, -ty, scale = 20000)
+plt.imshow( mascara, cmap = color_maps[cel], alpha = 0.5 )
+barra_de_escala( 10, sep = 1.5,  font_size = '11', color = 'k', more_text = 'T' )
+plt.xlim([0,1023])
+plt.ylim([1023,0])
+
+# Comprobacion
+plt.subplot(2,2,2)
+plt.quiver(x, y, vx0, -vy0, scale = 0.00001)
+plt.imshow( mascara, cmap = color_maps[cel], alpha = 0.5 )
+barra_de_escala( 10, sep = 1.5,  font_size = '11', color = 'k', more_text = 'V' )
+plt.xlim([0,1023])
+plt.ylim([1023,0])
+
+# Entrada
+plt.subplot(2,2,3)
+plt.quiver(x, y, uX*ps*1e-6, -uY*ps*1e-6, scale = 0.00001)
+plt.imshow( mascara, cmap = color_maps[cel], alpha = 0.5 )
+barra_de_escala( 10, sep = 1.5,  font_size = '11', color = 'k', more_text = 'U'  )
+plt.xlim([0,1023])
+plt.ylim([1023,0])
+
+# Diferencia
+plt.subplot(2,2,4)
+plt.quiver(x, y, duvx0, -duvy0, scale = 0.00001)
+plt.imshow( mascara, cmap = color_maps[cel], alpha = 0.5 )
+barra_de_escala( 10, sep = 1.5,  font_size = '11', color = 'k', more_text = 'U-V' )
+plt.xlim([0,1023])
+plt.ylim([1023,0])
+
+plt.show()
+
+#%% Exploracion del espacio de lambda
+# norm = np.linalg.norm()
+
+nu = 0.5
+E = 31.6      # kPa
+
+# uX, uY = smooth(four_core(X_s*ps),2), smooth(four_core(Y_s*ps),2) 
+uX, uY = X_s, Y_s
+
+N = 1000
+lam_list = np.logspace(-30, -10, N )
+tr_list = np.zeros( N )
+duvr0_list = np.zeros( N )
+
+for i in range(N):
+    ty, tx, vy0, vx0 = traction(uY, uX, ps*1e-6, ws*1e-6, E*1e3, nu, lam_list[i], Lcurve = True)
+    duvy0, duvx0 = uY*ps*1e-6 - vy0, uX*ps*1e-6 - vx0
+
+    tr = np.abs( np.sqrt( tx**2 + ty**2 ) )
+    duvr0 =  np.sqrt( np.abs(duvx0)**2 + np.abs(duvy0)**2  )
+
+    # tr_list[i] = np.real( np.sum(tr) )
+    # duvr0_list[i] = np.real( np.sum(duvr0) )
+
+    tr_list[i] = np.linalg.norm(tr)
+    duvr0_list[i] = np.linalg.norm(duvr0)
+
+N0 = np.argmin( np.abs(lam_list - 2*1e-20) )
+plt.plot( duvr0_list, tr_list )
+plt.plot( [duvr0_list[N0]], [tr_list[N0]], 'o', c ='r' )
+plt.xscale('log')
+plt.yscale('log')
+plt.xlabel('||u-Kt||')
+plt.ylabel('||t||')
+plt.grid()
+
+#%%
+N0 = np.argmin( np.abs(lam_list - 2*1e-20) )
+plt.plot( vr0_list, tr_list )
+plt.plot( [vr0_list[N0]], [tr_list[N0]], 'o', c = 'r' )
+
+# plt.plot( tr_list, vr0_list )
+# plt.plot( [tr_list[N0]],[vr0_list[N0]], 'o', c = 'r' )
+plt.xlabel('||u-Kt||')
+plt.ylabel('||t||')
+plt.xscale('log')
+plt.yscale('log')
+plt.grid()
+#%%
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+nu = 0.5
+E = 31.6
+
+uX, uY = smooth(four_core(X_s*ps),2), smooth(four_core(Y_s*ps),2)                                                             # defo
+l = uX.shape[0]
+
+FuX, FuY = np.fft.fft2( uX ), np.fft.fft2( uY )                                     # FFT defo
+kx, ky = np.meshgrid(np.fft.fftfreq(l)/ws*2*np.pi, np.fft.fftfreq(l)/ws*2*np.pi)
+k = np.sqrt( kx**2 + ky**2 )
+alpha = np.arctan2(kx, ky)
+
+Kxx_inv = E*k*( (1-nu)+nu*np.cos(alpha)**2 )/(1-nu**2)        # green
+Kyy_inv = E*k*( (1-nu)+nu*np.sin(alpha)**2 )/(1-nu**2)
+K__inv = E*k*( nu*np.cos(alpha)*np.sin(alpha) )/(1-nu**2)     
+# segun mis cuentas falta un signo menos en K__inv, pero asi da mejor...
+
+Ttx = Kxx_inv*FuX + K__inv*FuY
+Tty = K__inv*FuX + Kyy_inv*FuY
+
+tx, ty = np.fft.ifft2( Ttx ), np.fft.ifft2( Tty )
+tx_s, ty_s = smooth(tx,3), smooth(ty, 3)
+
+#%%
+
+
+#%%
+nu = 0.5
+E = 31.6      # kPa
+lam = 0.3*1e-19
+
+# uX, uY = smooth(four_core(X_s*ps),2), smooth(four_core(Y_s*ps),2) 
+uX, uY = X_s, Y_s
+ty, tx = traction(uY, uX, ps*1e-6, ws*1e-6, E*1e3, nu, lam)
+tx_s, ty_s = smooth(tx,3), smooth(ty, 3)
+
+
+plt.quiver(x, y, tx, -ty)
+plt.imshow( mascara, cmap = color_maps[cel], alpha = 0.5 )
+barra_de_escala( 10, sep = 1.5,  font_size = 'large', color = 'k' )
+plt.xlim([0,1023])
+plt.ylim([1023,0])
+
+#%%
+
+tr = np.sqrt( np.real(tx)**2 + np.real(ty)**2 )
+plt.imshow(tr, extent = [0,1023,1023,0] )
+plt.colorbar()
+plt.plot( b[1], b[0], c = 'w', ls = 'dashed', lw = 0.75  )
+barra_de_escala( 10, sep = 1.5,  font_size = 'large', color = 'w' )
+
+
+#%%
+# x2, y2 = np.meshgrid( np.linspace( np.max(x), np.min(x), len(tx) ), np.linspace( np.max(x), np.min(x), len(tx) )  )
+# plt.imshow(np.real(FuX))
+# plt.quiver(kx, ky, np.real(FuX), np.real(FuY))
+# plt.quiver(x2, y2, tx_s, -ty_s)
+plt.quiver(tx1, -ty1)#, scale = 500)
+# plt.quiver(tx-tx1, ty-ty1)#, scale = 750)
+
+# plt.quiver(kx, ky, Ttx, Tty)
+# plt.quiver(uX, uY)
+plt.imshow( mascara, cmap = color_maps[cel], alpha = 0.5, extent = [0,l,l,0] )
+# barra_de_escala( 10, sep = 1.5,  font_size = 'large', color = 'k' )
+# plt.xlim([0,1023])
+# plt.ylim([1023,0])
+# plt.show()
+
+#%%
+
+K = np.array( [[ 1  ,   3  ],
+               [ 5  ,   7  ]] )
+K_inv = np.linalg.inv(K)
+U = np.array(  [ 2   ,  1   ] )
+
+T = np.dot( K_inv, K )
+print(K_inv)
+print(T)
+
+#%%
+
+kix = ((k * young) / (2 * (1 - sigma ** 2))) * ((1 - sigma + sigma * np.cos(alpha) ** 2))
+kiy = ((k * young) / (2 * (1 - sigma ** 2))) * ((1 - sigma + sigma * np.sin(alpha) ** 2))
+kid = ((k * young) / (2 * (1 - sigma ** 2))) * (sigma * np.sin(alpha) * np.cos(alpha))
+
+
+
+
+#%%
+dom = np.arange(0,6*np.pi,0.01)
+fun = np.sin(5*dom)+np.sin(dom) 
+plt.figure()
+plt.plot(dom, fun)
+
+
+Tfun = np.fft.fft(fun)
+Tdom = np.fft.fftfreq(len(fun))
+# Tdom = np.fft.fftshift(Tdom)
+plt.figure()
+plt.plot(Tdom, np.real(Tfun),'o')
+plt.xlim( [-0.01,0.01] )
+plt.grid()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#%%
 import scipy
 
 # X, Y = np.zeros([ X.shape[0] + 1 ]*2 ), np.zeros([ Y.shape[0] + 1 ]*2 )
